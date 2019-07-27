@@ -1,4 +1,4 @@
-@ECHO off
+@ECHO OFF
 SETLOCAL
 SET VERSION=2.9.0
 SET VR=290
@@ -27,22 +27,25 @@ REM --------- create directory
 SET SCORPIO=Scorpio-train
 mkdir %SCORPIO%
 cd %SCORPIO%
-SET CWD=%cd%/
+SET CWD=%cd%\
 
 REM --------- download nnprobe
 SET FILENAME=%EGBB%.zip
 bitsadmin /transfer mydownload /dynamic /download /priority FOREGROUND "%LNK%/%VERSION%/%FILENAME%" %CWD%%FILENAME%
-unzip -K %CWD%%FILENAME%
+powershell Expand-Archive %CWD%%FILENAME% -DestinationPath %CWD%
+DEL %CWD%%FILENAME%
 
 REM --------- download scorpio binary
 SET FILENAME=scorpio%VR%-mcts-nn.zip
 bitsadmin /transfer mydownload /dynamic /download /priority FOREGROUND "%LNK%/%VERSION%/%FILENAME%" %CWD%%FILENAME%
-unzip -K %CWD%%FILENAME%
+powershell Expand-Archive %CWD%%FILENAME% -DestinationPath %CWD%
+DEL %CWD%%FILENAME%
 
 REM --------- download networks
 for %%N in ( nets-ccrl-cegt.zip nets-lczero.zip nets-maddex.zip ) DO (
     bitsadmin /transfer mydownload /dynamic /download /priority FOREGROUND "%LNK%/%VERSION%/%%N" %CWD%%%N
-    unzip -K %CWD%%%N
+    powershell Expand-Archive %CWD%%%N -DestinationPath %CWD%
+    DEL %CWD%%%N
 )
 
 cd %EGBB%
