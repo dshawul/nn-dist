@@ -96,4 +96,4 @@ MOVE output.txt scorpio.ini
 cd ../..
 
 REM ---------- test
-%EXE% go quit
+CALL %EXE% go quit

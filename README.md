@@ -1,28 +1,26 @@
 # nn-dist
 Distributed chess neural network training program. 
 
-## Compile and run
-You will need 'javac' and 'java' to compile and run the client.
-Please install install Java JDK for javac.
+## How to run client
+You will need 'java' to run the client.
 
-### Windows
-To build:
+On Windows execute:
 
-     ./build.bat
+     client.bat
 
-and to run
-
-     ./client.bat
-
-You may need to run "./client.bat" again if it exist the first time.
-
-### Linux
-To build:
-
-     ./build.sh
-
-and to run
+On Linux execute:
 
      ./client.sh
 
 
+## How to build
+Just in case you want to build it, you would need Java JDK for the javac compiler.
+It comes with pre-built class files so you probably don't need to do this.
+
+On Windows execute:
+
+     build.bat
+
+On Linux execute:
+
+     ./build.sh
