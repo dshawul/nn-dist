@@ -44,7 +44,7 @@ class DatabaseManager {
         }
     }
     private void createTables() throws SQLException {
-        String sqlCreate = "CREATE TABLE IF NOT EXISTS users"
+        String sqlUsers = "CREATE TABLE IF NOT EXISTS users"
                 + "("
                 + "   user_id            SERIAL PRIMARY KEY,"
                 + "   username           VARCHAR(50) UNIQUE NOT NULL,"
@@ -52,16 +52,30 @@ class DatabaseManager {
                 + "   created_on         TIMESTAMP NOT NULL,"
                 + "   last_login         TIMESTAMP"
                 + ")";
+        String sqlContrib = "CREATE TABLE IF NOT EXISTS contrib"
+                + "("
+                + "   user_id            INTEGER NOT NULL,"
+                + "   work_id            INTEGER NOT NULL,"
+                + "   games              INTEGER NOT NULL"
+                + ")";
+        String sqlWork = "CREATE TABLE IF NOT EXISTS work"
+                + "("
+                + "   work_id            INTEGER UNIQUE NOT NULL,"
+                + "   parameters         VARCHAR(512)"
+                + ")";
         Statement stmt = conn.createStatement();
-        stmt.execute(sqlCreate);
+        stmt.execute(sqlUsers);
+        stmt.execute(sqlContrib);
+        stmt.execute(sqlWork);
         stmt.close();
     }
     public boolean checkUser(String user, String pass) throws SQLException {
         String sqlStr;
-
+        ResultSet rs;
         Statement stmt = conn.createStatement();
+
         sqlStr = "SELECT * FROM users WHERE username = '" + user + "'";
-        ResultSet rs = stmt.executeQuery(sqlStr);
+        rs = stmt.executeQuery(sqlStr);
         if(rs.next()) {
             String password = rs.getString("password");
             stmt.close();
@@ -78,16 +92,59 @@ class DatabaseManager {
         }
         stmt.close();
 
-        String sqlInsert = "INSERT INTO users"
+        sqlStr = "INSERT INTO users"
                 + "(username,password,created_on,last_login) VALUES"
-                + "(\'" + user + "','" + pass + "',?,?)";
-        PreparedStatement pstmt = conn.prepareStatement(sqlInsert);
+                + "('" + user + "','" + pass + "',?,?)";
+        PreparedStatement pstmt = conn.prepareStatement(sqlStr);
         pstmt.setTimestamp(1,getCurrentTimeStamp());
         pstmt.setTimestamp(2,getCurrentTimeStamp());
         pstmt.executeUpdate();
         pstmt.close();
         return true;
     }
+    public void checkWork(int workID, String[] parameters) throws SQLException {
+        String sqlStr;
+        ResultSet rs;
+        Statement stmt = conn.createStatement();
+
+        sqlStr = "SELECT * FROM work WHERE work_id = " + workID;
+        rs = stmt.executeQuery(sqlStr);
+        if(!rs.next()) {
+            String params = "";
+            for(int i = 0; i < parameters.length; i++)
+                params += parameters[i] + " ";
+            sqlStr = "INSERT INTO work"
+                    + "(work_id,parameters) VALUES"
+                    + "(" + workID + ",'" + params.trim() + "')";
+            stmt.executeUpdate(sqlStr);
+        }
+        stmt.close();
+    }
+    public void addContrib(String username, int workID, int games) throws SQLException {
+        String sqlStr;
+        ResultSet rs;
+        Statement stmt = conn.createStatement();
+
+        sqlStr = "SELECT * FROM users WHERE username = '" + username + "'";
+        rs = stmt.executeQuery(sqlStr);
+        rs.next();
+        int user_id = rs.getInt("user_id");
+
+        sqlStr = "SELECT * FROM contrib WHERE user_id = " + user_id + " AND work_id = " + workID;
+        rs = stmt.executeQuery(sqlStr);
+
+        if(!rs.next()) {
+            sqlStr = "INSERT INTO contrib"
+                    + "(user_id,work_id,games) VALUES"
+                    + "(" + user_id + "," + workID + "," + games + ")";
+        } else {
+            sqlStr = "UPDATE contrib SET games = games + " + games
+                    + " WHERE user_id = " + user_id + " AND work_id = " + workID;
+        }
+        stmt.executeUpdate(sqlStr);
+        stmt.close();
+    }
+
     private static Timestamp getCurrentTimeStamp() {
         Date today = new Date();
         return new Timestamp(today.getTime());
@@ -110,7 +167,7 @@ public class Manager {
     public static List<Engine> InstalledEngines;
     public static List<Engine> ObserverEngines;
     public List<Engine> WorkObservers;
-    public int workID;
+    public static int workID;
 
     private boolean isVerbose = false;
     
@@ -158,7 +215,7 @@ public class Manager {
                 Install(engine);
                 reader.close();
             } else {
-                Install(server_address + " " + Integer.toString(server_port) + "=tcp");
+                Install(server_address + " " + server_port + "=tcp");
             }
         } catch(Exception e) {}
     }
@@ -168,7 +225,7 @@ public class Manager {
             if(!settings.exists()) {
                 BufferedWriter writer = new BufferedWriter(
                     new FileWriter("settings.ini"));
-                String str = server_address + " " + Integer.toString(server_port) + 
+                String str = server_address + " " + server_port + 
                     " " + user + " " + pass + "=tcp";
                 writer.write(str);
                 writer.close();
@@ -188,10 +245,9 @@ public class Manager {
         if(isServer)
             return;
         isServer = true;
-
         dbm = new DatabaseManager();
         dbm.connect();
-        
+
         final Manager m1 = allManagers.get(0);
         try {
             server = new ServerSocket(server_port);
@@ -375,9 +431,16 @@ public class Manager {
             } else if(Engine.isSame(cmd,"-network-pb")) {
                 network_pb = args[count++];
             } else if(Engine.isSame(cmd,"-parameters")) {
+                workID = Integer.parseInt(args[count++].trim());
                 parameters = new String[4];
                 for(int i = 0; i < 4; i++)
                     parameters[i] = args[count++];
+
+                try {
+                    dbm.checkWork(workID,parameters);
+                } catch (SQLException e) {
+                    printDebug(e.getMessage(),0);
+                }
             } else if(Engine.isSame(cmd,"-update-network")) {
                 SendNetworkAll(workID);
             } else if(Engine.isSame(cmd,"-help")) {

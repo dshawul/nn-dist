@@ -429,7 +429,10 @@ class TcpClientEngine extends SocketEngine {
                 //games
                 content = Files.readAllBytes(Paths.get("cgames.pgn"));
                 
+                int count = new String(content).split("Result").length - 1;
+                
                 message = "<games>\n";
+                message += count + "\n";
                 message += content.length;
                 send(message);
                 
@@ -486,6 +489,13 @@ class TcpServerEngine extends SocketEngine {
         while(sc.hasNext()) {
             cmd = sc.next();
             if(isSame(cmd,"<games>")) {
+                cmd = readLn();
+                int games = Integer.parseInt(cmd.trim());
+                try {
+                    myManager.dbm.addContrib(userName,myManager.workID,games);
+                } catch (Exception e) {
+                    printDebug(e.getMessage());
+                }
                 recvSaveFile("cgames.pgn",true);
             } else if(isSame(cmd,"<train>")) {
                 recvSaveFile("ctrain.epd",true);
