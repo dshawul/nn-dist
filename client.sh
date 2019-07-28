@@ -1,6 +1,6 @@
 #!/bin/bash
 
-trap 'kill $(jobs -p)' EXIT
+trap 'kill $(jobs -p)' EXIT INT
 
 if [ ! -d Scorpio-train ]; then
   scripts/install.sh

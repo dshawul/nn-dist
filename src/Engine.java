@@ -223,15 +223,26 @@ abstract class SocketEngine extends Engine {
                     "                                                                                        \n" +     
                     "\n\n" + 
                     "            Welcome to NTS (Network training server) for Scorpio Zero                   \n" +
-                    "                                                                                        \n" +
-                    "            Login to server with an alias                                               \n";
+                    "                                                                                        \n";
                 
                 send(Intro);
-                
-                send("login:");
-                userName = readLn();
-                send("password:");
-                passWord = readLn();
+
+                String info = "\n\n Please enter a username and password and an account will be created.\n" +
+                              " The password will be stored in plain text, so avoid using passwords used \n" +
+                              " for sensitive applications. \n\n";
+                send(info);
+
+                while(true) {
+                    send("login:");
+                    userName = readLn().trim();
+                    send("password:");
+                    passWord = readLn().trim();
+                    if(!myManager.dbm.checkUser(userName, passWord)) {
+                        send("\nUsername password combination is incorrect. Please try again.\n");
+                        continue;
+                    }
+                    break;
+                }
                 
                 name = userName + "@" + host;
                 name = "[" + userName + "] [" + passWord + "]";
@@ -252,7 +263,7 @@ abstract class SocketEngine extends Engine {
             else
                 printDebug("Client disconnected.");
         } catch (Exception e) {
-            printDebug("Engine failure: " + cmdLine);
+            printDebug("Engine failure: " + cmdLine + "\n" + e.getMessage());
         }
         
         done = State.FAILED;
@@ -267,16 +278,22 @@ abstract class SocketEngine extends Engine {
             logging++;
             if(!userName.isEmpty())
                 send(userName);
-            else
-                send("user");
+            else {
+                Scanner in = new Scanner(System.in);
+                userName = in.nextLine();
+                send(userName);
+            }
             return true;
         }
         if(passwordPattern.matcher(str).matches()) {
             logging++;
             if(!passWord.isEmpty())
                 send(passWord);
-            else
-                send("pass");
+            else {
+                Scanner in = new Scanner(System.in);
+                passWord = in.nextLine();
+                send(passWord);
+            }
             return true;
         }
         return false;
@@ -330,6 +347,7 @@ class TcpClientEngine extends SocketEngine {
             if(done != State.LOGGED) {
                 done = State.LOGGED;
             }
+            myManager.WriteEngines(userName, passWord);
             return true;
         }
         return false;

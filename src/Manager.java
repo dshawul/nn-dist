@@ -1,4 +1,8 @@
 import java.io.File;
+import java.io.FileWriter;
+import java.io.FileReader;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -7,21 +11,106 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Date;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.PreparedStatement;
+import java.sql.Timestamp;
+import java.sql.ResultSet;
+
+/** Database manager
+ */
+class DatabaseManager {
+    private final String url = "jdbc:postgresql://localhost/scorpiozero";
+    private final String user = "postgres";
+    private final String password = "postgres";
+    private Connection conn = null;
+
+    public void connect() {
+        try {
+            conn = DriverManager.getConnection(url,user,password);
+            if (conn != null) {
+                System.out.println("Connected to the database!");
+            } else {
+                System.out.println("Failed to make connection!");
+            }
+            createTables();
+        } catch (SQLException e) {
+            System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    private void createTables() throws SQLException {
+        String sqlCreate = "CREATE TABLE IF NOT EXISTS users"
+                + "("
+                + "   user_id            SERIAL PRIMARY KEY,"
+                + "   username           VARCHAR(50) UNIQUE NOT NULL,"
+                + "   password           VARCHAR(50) NOT NULL,"
+                + "   created_on         TIMESTAMP NOT NULL,"
+                + "   last_login         TIMESTAMP"
+                + ")";
+        Statement stmt = conn.createStatement();
+        stmt.execute(sqlCreate);
+        stmt.close();
+    }
+    public boolean checkUser(String user, String pass) throws SQLException {
+        String sqlStr;
+
+        Statement stmt = conn.createStatement();
+        sqlStr = "SELECT * FROM users WHERE username = '" + user + "'";
+        ResultSet rs = stmt.executeQuery(sqlStr);
+        if(rs.next()) {
+            String password = rs.getString("password");
+            stmt.close();
+            if(!password.equals(pass))
+                return false;
+            sqlStr = "UPDATE users" +
+                     " SET last_login=?" +
+                     " WHERE username = '" + user + "'";
+            PreparedStatement pstmt = conn.prepareStatement(sqlStr);
+            pstmt.setTimestamp(1,getCurrentTimeStamp());
+            pstmt.executeUpdate();
+            pstmt.close();
+            return true;
+        }
+        stmt.close();
+
+        String sqlInsert = "INSERT INTO users"
+                + "(username,password,created_on,last_login) VALUES"
+                + "(\'" + user + "','" + pass + "',?,?)";
+        PreparedStatement pstmt = conn.prepareStatement(sqlInsert);
+        pstmt.setTimestamp(1,getCurrentTimeStamp());
+        pstmt.setTimestamp(2,getCurrentTimeStamp());
+        pstmt.executeUpdate();
+        pstmt.close();
+        return true;
+    }
+    private static Timestamp getCurrentTimeStamp() {
+        Date today = new Date();
+        return new Timestamp(today.getTime());
+    }
+}
 
 /** Base manager class
  */
 public class Manager {
+    public static DatabaseManager dbm;
+    public static final String server_address = "danidesti.ddns.net";
     public static ServerSocket server;
     public static int server_port;
     public static boolean isServer;
+    public static String network_uff;
+    public static String network_pb;
+    public static String[] parameters;
+    
     public static List<Manager> allManagers;
     public static List<Engine> InstalledEngines;
     public static List<Engine> ObserverEngines;
     public List<Engine> WorkObservers;
     public int workID;
-    public static String network_uff;
-    public static String network_pb;
-    public static String[] parameters;
 
     private boolean isVerbose = false;
     
@@ -60,7 +149,31 @@ public class Manager {
         sc.close();
     }
     static void InstallEngines() {
-        Install("danidesti.ddns.net " + Integer.toString(server_port) + " user=tcp");
+        try {
+            File settings = new File("settings.ini");
+            if(settings.exists()) {
+                BufferedReader reader = new BufferedReader( 
+                    new FileReader("settings.ini"));
+                String engine = reader.readLine();
+                Install(engine);
+                reader.close();
+            } else {
+                Install(server_address + " " + Integer.toString(server_port) + "=tcp");
+            }
+        } catch(Exception e) {}
+    }
+    static void WriteEngines(String user, String pass) {
+        try {
+            File settings = new File("settings.ini");
+            if(!settings.exists()) {
+                BufferedWriter writer = new BufferedWriter(
+                    new FileWriter("settings.ini"));
+                String str = server_address + " " + Integer.toString(server_port) + 
+                    " " + user + " " + pass + "=tcp";
+                writer.write(str);
+                writer.close();
+            }
+        } catch(Exception e) {}
     }
     public void printDebug(String str,int id) {
         if(isVerbose)
@@ -75,6 +188,9 @@ public class Manager {
         if(isServer)
             return;
         isServer = true;
+
+        dbm = new DatabaseManager();
+        dbm.connect();
         
         final Manager m1 = allManagers.get(0);
         try {
