@@ -223,6 +223,7 @@ abstract class SocketEngine extends Engine {
                     "                                                                                        \n" +     
                     "\n\n" + 
                     "            Welcome to NTS (Network training server) for Scorpio Zero                   \n" +
+                    "                        http://scorpiozero.ddns.net                                     \n" +
                     "                                                                                        \n";
                 
                 send(Intro);

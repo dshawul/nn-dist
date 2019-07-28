@@ -155,7 +155,7 @@ class DatabaseManager {
  */
 public class Manager {
     public static DatabaseManager dbm;
-    public static final String server_address = "danidesti.ddns.net";
+    public static final String server_address = "scorpiozero.ddns.net";
     public static ServerSocket server;
     public static int server_port;
     public static boolean isServer;
