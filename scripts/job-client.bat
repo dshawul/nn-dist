@@ -19,10 +19,10 @@ WHERE nvidia-smi >nul 2>nul
 IF %ERRORLEVEL% NEQ 0 (
   SET GPUS=0
   SET NDIR=%cd%\net.pb
-  DEL *.trt >nul 2>&1
 ) ELSE (
   SET GPUS=1
   SET NDIR=%cd%\net.uff
+  DEL *.trt >nul 2>&1
 )
 SET CPUS=%NUMBER_OF_PROCESSORS%
 
