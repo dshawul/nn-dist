@@ -15,7 +15,7 @@ IF NOT EXIST %SC%\%EXE% (
 )
 
 REM check for nvidia GPU
-WHERE nvidia-smi >nul 2>nul
+WHERE nvcuda.dll >nul 2>nul
 IF %ERRORLEVEL% NEQ 0 (
   SET GPUS=0
   SET NDIR=%cd%\net.pb

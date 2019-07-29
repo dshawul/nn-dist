@@ -7,7 +7,7 @@ SET DEV=cpu
 SET nn_type=0
 
 REM --------- Nvidia GPUS
-WHERE nvidia-smi >nul 2>nul
+WHERE nvcuda.dll >nul 2>nul
 IF %ERRORLEVEL% NEQ 0 (
   SET GPUS=0
   SET DEV=cpu
