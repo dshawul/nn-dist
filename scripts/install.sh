@@ -30,7 +30,7 @@ fi
 # number of cores and gpus
 CPUS=`grep -c ^processor /proc/cpuinfo`
 if [ ! -z `which nvidia-smi` ]; then
-    GPUS=`nvidia-smi | grep "N/A" | wc -l`
+    GPUS=`nvidia-smi --query-gpu=name --format=csv,noheader | wc -l`
     DEV=gpu
 else
     GPUS=1

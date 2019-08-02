@@ -19,7 +19,7 @@ fi
 #number of cpus and gpus
 CPUS=`grep -c ^processor /proc/cpuinfo`
 if [ ! -z `which nvidia-smi` ]; then
-    GPUS=`nvidia-smi | grep "N/A" | wc -l`
+    GPUS=`nvidia-smi --query-gpu=name --format=csv,noheader | wc -l`
     NDIR=$PWD/net.uff
     rm -rf *.trt
 else
@@ -32,14 +32,14 @@ run() {
     export CUDA_VISIBLE_DEVICES="$1" 
     SCOPT="reuse_tree 0 fpu_is_loss 0 fpu_red 0 cpuct_init ${CPUCT} \
            policy_temp ${POL_TEMP} noise_frac ${NOISE_FRAC}"
-    taskset -c $3 time ./${EXE} nn_type 0 nn_path ${NDIR} new ${SCOPT} \
+    taskset -c $3 ./${EXE} nn_type 0 nn_path ${NDIR} new ${SCOPT} \
             sv ${SV} pvstyle 1 selfplayp $2 games$1.pgn train$1.epd quit
 }
 
 #use all gpus
 rungames() {
-    if [ $GPUS = 0 ]; then
-        run 0 $1 0-$CPUS:1 &
+    if [ $GPUS -le 0 ]; then
+	run 0 $1 0-$((CPUS-1)):1 &
     else
         I=$((CPUS/GPUS))
         for k in `seq 0 $((GPUS-1))`; do
