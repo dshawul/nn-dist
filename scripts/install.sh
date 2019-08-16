@@ -40,7 +40,7 @@ fi
 # Select
 OS=${1:-$OSD}      # OS is either ubuntu/centos/windows/android
 DEV=${2:-$DEV}     # Device is either gpu/cpu
-VERSION=2.9.0      # Version of scorpio
+VERSION=3.0        # Version of scorpio
 
 # paths
 VR=`echo $VERSION | tr -d '.'`
