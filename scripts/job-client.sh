@@ -31,7 +31,7 @@ fi
 run() {
     export CUDA_VISIBLE_DEVICES="$1" 
     SCOPT="reuse_tree 0 fpu_is_loss 0 fpu_red 0 cpuct_init ${CPUCT} \
-           policy_temp ${POL_TEMP} noise_frac ${NOISE_FRAC}"
+           backup_type 6 policy_temp ${POL_TEMP} noise_frac ${NOISE_FRAC}"
     taskset -c $3 ./${EXE} nn_type 0 nn_path ${NDIR} new ${SCOPT} \
             sv ${SV} pvstyle 1 selfplayp $2 games$1.pgn train$1.epd quit
 }
