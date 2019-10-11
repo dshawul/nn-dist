@@ -62,9 +62,9 @@ REM get selfplay games
     SET MCWD=%cd%
     cd %SC%
     CALL :rungames %G%
-    type games*.pgn > cgames.pgn
-    type train*.epd > ctrain.epd
-    DEL games*.pgn train*.epd
+    type games*.pgn* > cgames.pgn
+    type train*.epd* > ctrain.epd
+    DEL games*.pgn* train*.epd*
     cd %MCWD%
     MOVE %SC%\cgames.pgn %MCWD% >nul 2>&1
     MOVE %SC%\ctrain.epd %MCWD% >nul 2>&1

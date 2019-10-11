@@ -56,9 +56,9 @@ get_selfplay_games() {
     rm -rf cgames.pgn ctrain.epd
     cd ${SC}
     rungames ${G}
-    cat games*.pgn > cgames.pgn
-    cat train*.epd > ctrain.epd
-    rm -rf games*.pgn train*.epd
+    cat games*.pgn* > cgames.pgn
+    cat train*.epd* > ctrain.epd
+    rm -rf games*.pgn* train*.epd*
     cd - > /dev/null 2>&1
     mv ${SC}/cgames.pgn .
     mv ${SC}/ctrain.epd .
