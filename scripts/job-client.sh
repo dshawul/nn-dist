@@ -11,43 +11,35 @@ CPUCT=$2                       # Cpuct constant
 POL_TEMP=$3                    # Policy temeprature
 NOISE_FRAC=$4                  # Fraction of Dirchilet noise
 
+#mpi
+RANKS=1
+SDIR=$( dirname ${BASH_SOURCE[0]} )
+if [ $RANKS -gt 1 ]; then
+   MPICMD="mpirun -np ${RANKS} --map-by node --bind-to none"
+else
+   MPICMD=
+fi
+
 #check if Scorpio directory exists
 if [ ! -f ${SC}/${EXE} ]; then
     exit 0
 fi
 
 #number of cpus and gpus
-CPUS=`grep -c ^processor /proc/cpuinfo`
 if [ ! -z `which nvidia-smi` ]; then
-    GPUS=`nvidia-smi --query-gpu=name --format=csv,noheader | wc -l`
     NDIR=$PWD/net.uff
     rm -rf *.trt
 else
-    GPUS=0
     NDIR=$PWD/net.pb
 fi
 
 #run selfplay
-run() {
-    export CUDA_VISIBLE_DEVICES="$1" 
+rungames() {
     SCOPT="reuse_tree 0 fpu_is_loss 0 fpu_red 0 cpuct_init ${CPUCT} \
            backup_type 6 policy_temp ${POL_TEMP} noise_frac ${NOISE_FRAC}"
-    taskset -c $3 ./${EXE} nn_type 0 nn_path ${NDIR} new ${SCOPT} \
-            sv ${SV} pvstyle 1 selfplayp $2 games$1.pgn train$1.epd quit
-}
-
-#use all gpus
-rungames() {
-    if [ $GPUS -le 0 ]; then
-	run 0 $1 0-$((CPUS-1)):1 &
-    else
-        I=$((CPUS/GPUS))
-        for k in `seq 0 $((GPUS-1))`; do
-            run $k $1 $((k*I))-$((k*I+I-1)):1 &
-        done
-    fi
-    wait
-    echo "All jobs finished"
+    ALLOPT="nn_type 0 nn_path ${NDIR} new ${SCOPT} sv ${SV} \
+	   pvstyle 1 selfplayp ${G} games.pgn train.epd quit"
+    time ${MPICMD} ${SDIR}/job-one.sh ./${EXE} ${ALLOPT}
 }
 
 
