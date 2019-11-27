@@ -45,7 +45,7 @@ VERSION=3.0        # Version of scorpio
 # paths
 VR=`echo $VERSION | tr -d '.'`
 EGBB=nnprobe-${OS}-${DEV}
-NET="nets-ccrl-cegt nets-lczero nets-maddex"
+NET="nets-scorpio nets-lczero nets-maddex"
 if [ $DEV = "gpu" ]; then
     nn_type=1
 else
@@ -101,7 +101,7 @@ egbbp=${PD}/${EGBB}
 if [ $nn_type -eq 1 ]; then
     nnp=${PD}/nets-maddex/net-maddex.uff
 else
-    nnp=${PD}/nets-ccrl-cegt/net-6x64.pb
+    nnp=${PD}/nets-scorpio/net-6x64.pb
 fi
 if [ $OS = "windows" ]; then
     exep=${PD}/bin/Windows
@@ -118,6 +118,7 @@ nnp_=$(echo $nnp | sed 's_/_\\/_g')
 sed -i "s/^egbb_path.*/egbb_path                ${egbbp_}/g" scorpio.ini
 sed -i "s/^nn_path.*/nn_path                  ${nnp_}/g" scorpio.ini
 sed -i "s/^nn_type.*/nn_type                  ${nn_type}/g" scorpio.ini
+sed -i "s/^float_type.*/float_type                  HALF/g" scorpio.ini
 sed -i "s/^delay.*/delay                  ${delay}/g" scorpio.ini
 if [ $DEV = "gpu" ]; then
     sed -i "s/^device_type.*/device_type              GPU/g" scorpio.ini
@@ -139,8 +140,8 @@ fi
 cd ../..
 
 # Test
-echo "Runnind with delay 0"
+echo "Running with delay 0"
 $exep/$EXE delay 0 go quit
-echo "Runnind with delay 1"
+echo "Running with delay 1"
 $exep/$EXE delay 1 go quit
 
