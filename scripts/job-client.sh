@@ -3,7 +3,7 @@
 set -e
 
 #setup parameters for selfplay
-SC=./Scorpio-train/bin/Linux   # workding directory of engine
+SC=./Scorpio/bin/Linux         # workding directory of engine
 EXE=scorpio.sh                 # engine executable
 G=256                          # games per worker
 SV=$1                          # mcts simulations
@@ -35,7 +35,7 @@ fi
 
 #run selfplay
 rungames() {
-    SCOPT="reuse_tree 0 fpu_is_loss 0 fpu_red 0 cpuct_init ${CPUCT} \
+    SCOPT="alphabeta_man_c 0 reuse_tree 0 fpu_is_loss 0 fpu_red 0 cpuct_init ${CPUCT} \
            backup_type 6 policy_temp ${POL_TEMP} noise_frac ${NOISE_FRAC}"
     ALLOPT="nn_type 0 nn_path ${NDIR} new ${SCOPT} sv ${SV} \
 	   pvstyle 1 selfplayp ${G} games.pgn train.epd quit"

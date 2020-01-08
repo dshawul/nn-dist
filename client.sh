@@ -2,7 +2,7 @@
 
 trap 'kill $(jobs -p)' EXIT INT
 
-if [ ! -d Scorpio-train ]; then
+if [ ! -L Scorpio ]; then
   scripts/install.sh
 fi
 
