@@ -337,11 +337,13 @@ class TcpClientEngine extends SocketEngine {
             "^.*\\*\\*\\*\\* Starting NTS session as.*",
             Pattern.DOTALL);
     private String parameters = null;
+    private boolean net_recieved;
     
     TcpClientEngine(String cmd) {
         super(cmd);
         path = "tcp";
         type = Type.TCP;
+	net_recieved = false;
     }
     private boolean processLogin(String str) {
         if(loginPattern.matcher(str).matches()) {
@@ -363,6 +365,9 @@ class TcpClientEngine extends SocketEngine {
         if(handleLogin(str))
             return true;
         
+        String OS = System.getProperty("os.name");
+        boolean isWindows = OS.startsWith("Windows");
+
         Scanner sc = new Scanner(str);
         sc.useDelimiter("[=\\s]");
         String cmd;
@@ -377,10 +382,23 @@ class TcpClientEngine extends SocketEngine {
                 printDebug(cmd);
             } else if(isSame(cmd,"<network-uff>") || isSame(cmd,"<network-pb>")) {
                 String net;
-                if ( isSame(cmd,"<network-uff>") )
+                if ( isSame(cmd,"<network-uff>") ) {
                     net = "net.uff";
-                else
+		    String dir = System.getProperty("user.dir") + File.separator;
+		    String[] delcmd = null;
+		    if(isWindows)
+			delcmd = new String[]{"cmd","/c","DEL " + dir + "*.trt"};
+		    else
+			delcmd = new String[]{"bash","-c","rm -rf " + dir + "*.trt"};
+		    try {
+		        Process proc = Runtime.getRuntime().exec(delcmd);
+			proc.waitFor();
+		    } catch (Exception e) {
+                        printDebug("Could not delete trt files!");
+	            }
+		} else
                     net = "net.pb";
+		net_recieved = true;
                 recvSaveFile(net,false);
             }
         }
@@ -390,17 +408,13 @@ class TcpClientEngine extends SocketEngine {
         if(done != State.LOGGED || parameters == null)
             return true;
         
-        File net_uff = new File("net.uff");
-        File net_pb  = new File("net.pb");
-        if(net_uff.exists() && net_pb.exists());
-        else return true;
+        if(!net_recieved)
+            return true;
         
         while(!is_ready()) {
             
             // execute job
             try {
-                String OS = System.getProperty("os.name");
-                boolean isWindows = OS.startsWith("Windows");
                 String command = System.getProperty("user.dir") + File.separator +
                                  "scripts" + File.separator;
                 if(isWindows) command += "job-client.bat";

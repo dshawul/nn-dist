@@ -28,7 +28,6 @@ fi
 #number of cpus and gpus
 if [ ! -z `which nvidia-smi` ]; then
     NDIR=$PWD/net.uff
-    rm -rf *.trt
 else
     NDIR=$PWD/net.pb
 fi
