@@ -44,7 +44,7 @@ VERSION=3.0        # Version of scorpio
 VR=`echo $VERSION | tr -d '.'`
 EGBB=nnprobe-${OS}-${DEV}
 if [ $DEV = "gpu" ]; then
-    NET="nets-scorpio nets-lczero nets-maddex"
+    NET="nets-scorpio"
 else
     NET="nets-scorpio"
 fi
@@ -66,8 +66,8 @@ for N in $NET; do
     unzip -o $N.zip
 done
 # egbbs
-wget --no-check-certificate ${LNK}/${VERSION}/egbb.zip
-unzip -o egbb.zip
+#wget --no-check-certificate ${LNK}/${VERSION}/egbb.zip
+#unzip -o egbb.zip
 # scorpio binary
 wget --no-check-certificate ${LNK}/${VERSION}/scorpio${VR}-mcts-nn.zip
 unzip -o scorpio${VR}-mcts-nn.zip
@@ -106,7 +106,7 @@ if [ $DEV = "gpu" ]; then
     nnp_e=${PD}/nets-maddex/ME.uff
     nnp_m=
     nn_type=0
-    nn_type_e=1
+    nn_type_e=-1
     nn_type_m=-1
     wdl_head=0
     wdl_head_e=1
@@ -141,7 +141,7 @@ nnp_m_=$(echo $nnp_m | sed 's_/_\\/_g')
 sed -i "s/^egbb_path.*/egbb_path                ${egbbp_}/g" scorpio.ini
 sed -i "s/^egbb_files_path.*/egbb_files_path          ${egbbfp_}/g" scorpio.ini
 sed -i "s/^delay.*/delay                    ${delay}/g" scorpio.ini
-sed -i "s/^float_type.*/float_type               INT8/g" scorpio.ini
+sed -i "s/^float_type.*/float_type               HALF/g" scorpio.ini
 
 if [ $DEV = "gpu" ]; then
     sed -i "s/^device_type.*/device_type              GPU/g" scorpio.ini
@@ -197,7 +197,7 @@ echo "Generating calibrate.dat"
 $exep/$EXE use_nn 0 nn_type ${nn_type_m} runinpnn calibrate.epd calibrate.dat quit
 fi
 echo "Running with midgame net"
-$exep/$EXE nn_type -1 nn_type_e -1 setboard 1r1q2k1/5pp1/2p4p/4p3/1PPpP2P/Q1n3P1/1R3PB1/6K1 w - - 5 24 go quit
+$exep/$EXE nn_type_e -1 setboard 1r1q2k1/5pp1/2p4p/4p3/1PPpP2P/Q1n3P1/1R3PB1/6K1 w - - 5 24 go quit
 fi
 
 if [ $nn_type_e -ge 0 ]; then
@@ -206,6 +206,6 @@ echo "Generating calibrate.dat"
 $exep/$EXE use_nn 0 nn_type ${nn_type_e} runinpnn calibrate.epd calibrate.dat quit
 fi
 echo "Running with endgame net"
-$exep/$EXE nn_type -1 nn_type_m -1 setboard 6k1/2b2p1p/ppP3p1/4p3/PP1B4/5PP1/7P/7K w - - go quit
+$exep/$EXE nn_type_m -1 setboard 6k1/5R2/1p5p/p1b3p1/6P1/8/r6P/5R1K w - - 2 38 go quit
 fi
 

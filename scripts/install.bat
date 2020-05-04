@@ -34,10 +34,10 @@ powershell Expand-Archive %CWD%%FILENAME% -DestinationPath %CWD%
 DEL %CWD%%FILENAME%
 
 REM --------- download nnprobe
-SET FILENAME=egbb.zip
-bitsadmin /transfer mydownload /dynamic /download /priority FOREGROUND "%LNK%/%VERSION%/%FILENAME%" %CWD%%FILENAME%
-powershell Expand-Archive %CWD%%FILENAME% -DestinationPath %CWD%
-DEL %CWD%%FILENAME%
+REM SET FILENAME=egbb.zip
+REM bitsadmin /transfer mydownload /dynamic /download /priority FOREGROUND "%LNK%/%VERSION%/%FILENAME%" %CWD%%FILENAME%
+REM powershell Expand-Archive %CWD%%FILENAME% -DestinationPath %CWD%
+REM DEL %CWD%%FILENAME%
 
 REM --------- download scorpio binary
 SET FILENAME=scorpio%VR%-mcts-nn.zip
@@ -47,7 +47,7 @@ DEL %CWD%%FILENAME%
 
 REM --------- download networks
 IF %GPU% NEQ 0 (
-    SET NETS=nets-scorpio.zip nets-lczero.zip nets-maddex.zip
+    SET NETS=nets-scorpio.zip
 ) ELSE (
     SET NETS=nets-scorpio.zip
 )
@@ -71,7 +71,7 @@ IF %GPU% NEQ 0 (
   SET nnp_e=%CWD%nets-maddex/ME.uff
   SET nnp_m=
   SET nn_type=0
-  SET nn_type_e=1
+  SET nn_type_e=-1
   SET nn_type_m=-1
   SET wdl_head=0
   SET wdl_head_e=1
@@ -113,7 +113,7 @@ for /F "delims=" %%A in (scorpio.ini) do (
         echo n_devices                1 >> output.txt
      )
    ) ELSE IF /i "!LMN:~0,10!"=="float_type" (
-     echo float_type               INT8 >> output.txt
+     echo float_type               HALF >> output.txt
    ) ELSE IF /i "!LMN:~0,9!"=="nn_path_e" (
      IF %nn_type_e% GEQ 0 (
         echo nn_path_e                %nnp_e% >> output.txt
@@ -190,7 +190,7 @@ echo "Generating calibrate.dat"
 CALL %EXE% use_nn 0 nn_type %nn_type_m% runinpnn calibrate.epd calibrate.dat quit
 )
 echo "Running with midgame net"
-CALL %EXE% nn_type -1 nn_type_e -1 setboard 1r1q2k1/5pp1/2p4p/4p3/1PPpP2P/Q1n3P1/1R3PB1/6K1 w - - 5 24 go quit
+CALL %EXE% nn_type_e -1 setboard 1r1q2k1/5pp1/2p4p/4p3/1PPpP2P/Q1n3P1/1R3PB1/6K1 w - - 5 24 go quit
 )
 
 REM ----------
@@ -200,5 +200,5 @@ echo "Generating calibrate.dat"
 CALL %EXE% use_nn 0 nn_type %nn_type_e% runinpnn calibrate.epd calibrate.dat quit
 )
 echo "Running with endgame net"
-CALL %EXE% nn_type -1 nn_type_m -1 setboard 6k1/2b2p1p/ppP3p1/4p3/PP1B4/5PP1/7P/7K w - - go quit
+CALL %EXE% nn_type_m -1 setboard 6k1/5R2/1p5p/p1b3p1/6P1/8/r6P/5R1K w - - 2 38 go quit
 )
