@@ -33,12 +33,6 @@ bitsadmin /transfer mydownload /dynamic /download /priority FOREGROUND "%LNK%/%V
 powershell Expand-Archive %CWD%%FILENAME% -DestinationPath %CWD%
 DEL %CWD%%FILENAME%
 
-REM --------- download nnprobe
-REM SET FILENAME=egbb.zip
-REM bitsadmin /transfer mydownload /dynamic /download /priority FOREGROUND "%LNK%/%VERSION%/%FILENAME%" %CWD%%FILENAME%
-REM powershell Expand-Archive %CWD%%FILENAME% -DestinationPath %CWD%
-REM DEL %CWD%%FILENAME%
-
 REM --------- download scorpio binary
 SET FILENAME=scorpio%VR%-mcts-nn.zip
 bitsadmin /transfer mydownload /dynamic /download /priority FOREGROUND "%LNK%/%VERSION%/%FILENAME%" %CWD%%FILENAME%
@@ -63,7 +57,6 @@ cd ..
 
 REM ---------- paths
 SET egbbp=%CWD%%EGBB%
-SET egbbfp=%CWD%egbb
 SET EXE="%CWD%bin/Windows/scorpio.bat"
 
 IF %GPU% NEQ 0 (
@@ -96,8 +89,6 @@ for /F "delims=" %%A in (scorpio.ini) do (
    SET LMN=%%A
    IF /i "!LMN:~0,9!"=="egbb_path" (
      echo egbb_path                %egbbp%>> output.txt
-   ) ELSE IF /i "!LMN:~0,15!"=="egbb_files_path" (
-     echo egbb_files_path          %egbbfp%>> output.txt
    ) ELSE IF /i "!LMN:~0,2!"=="mt" (
      echo mt                  %mt% >> output.txt
    ) ELSE IF /i "!LMN:~0,11!"=="device_type" (
@@ -176,29 +167,5 @@ MOVE output.txt scorpio.ini
 cd ../..
 
 REM ----------
-IF %GPU% NEQ 0 (
-echo "Generating calibrate.dat"
-CALL %EXE% use_nn 0 nn_type %nn_type% runinpnn calibrate.epd calibrate.dat quit
-)
-echo "Running with opening net"
-CALL %EXE% nn_type_m -1 nn_type_e -1 go quit
-
-REM ----------
-IF %nn_type_m% GTR 0 (
-IF %GPU% NEQ 0 (
-echo "Generating calibrate.dat"
-CALL %EXE% use_nn 0 nn_type %nn_type_m% runinpnn calibrate.epd calibrate.dat quit
-)
-echo "Running with midgame net"
-CALL %EXE% nn_type_e -1 setboard 1r1q2k1/5pp1/2p4p/4p3/1PPpP2P/Q1n3P1/1R3PB1/6K1 w - - 5 24 go quit
-)
-
-REM ----------
-IF %nn_type_e% GTR 0 (
-IF %GPU% NEQ 0 (
-echo "Generating calibrate.dat"
-CALL %EXE% use_nn 0 nn_type %nn_type_e% runinpnn calibrate.epd calibrate.dat quit
-)
-echo "Running with endgame net"
-CALL %EXE% nn_type_m -1 setboard 6k1/5R2/1p5p/p1b3p1/6P1/8/r6P/5R1K w - - 2 38 go quit
-)
+echo "Making a test run"
+CALL %EXE% go quit

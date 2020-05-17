@@ -264,7 +264,7 @@ abstract class SocketEngine extends Engine {
             else
                 printDebug("Client disconnected.");
         } catch (Exception e) {
-            printDebug("Engine failure: " + cmdLine + "\n" + e.getMessage());
+            printDebug("Engine failure: " + cmdLine + " Error message: " + e.getMessage());
         }
         
         done = State.FAILED;

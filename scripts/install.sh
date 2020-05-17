@@ -65,9 +65,6 @@ for N in $NET; do
     wget --no-check-certificate ${LNK}/${VERSION}/$N.zip
     unzip -o $N.zip
 done
-# egbbs
-#wget --no-check-certificate ${LNK}/${VERSION}/egbb.zip
-#unzip -o egbb.zip
 # scorpio binary
 wget --no-check-certificate ${LNK}/${VERSION}/scorpio${VR}-mcts-nn.zip
 unzip -o scorpio${VR}-mcts-nn.zip
@@ -100,7 +97,6 @@ PD=`pwd`
 PD=`echo $PD | sed 's/\/cygdrive//g'`
 PD=`echo $PD | sed 's/\/c\//c:\//g'`
 egbbp=${PD}/${EGBB}
-egbbfp=${PD}/egbb
 if [ $DEV = "gpu" ]; then
     nnp=${PD}/nets-scorpio/ens-net-20x256.uff
     nnp_e=${PD}/nets-maddex/ME.uff
@@ -133,13 +129,11 @@ cd $exep
 
 # Edit scorpio.ini
 egbbp_=$(echo $egbbp | sed 's_/_\\/_g')
-egbbfp_=$(echo $egbbfp | sed 's_/_\\/_g')
 nnp_=$(echo $nnp | sed 's_/_\\/_g')
 nnp_e_=$(echo $nnp_e | sed 's_/_\\/_g')
 nnp_m_=$(echo $nnp_m | sed 's_/_\\/_g')
 
 sed -i "s/^egbb_path.*/egbb_path                ${egbbp_}/g" scorpio.ini
-sed -i "s/^egbb_files_path.*/egbb_files_path          ${egbbfp_}/g" scorpio.ini
 sed -i "s/^delay.*/delay                    ${delay}/g" scorpio.ini
 sed -i "s/^float_type.*/float_type               HALF/g" scorpio.ini
 
@@ -184,28 +178,5 @@ fi
 cd ../..
 
 # Test
-if [ $DEV = "gpu" ]; then
-echo "Generating calibrate.dat"
-$exep/$EXE use_nn 0 nn_type ${nn_type} runinpnn calibrate.epd calibrate.dat quit
-fi
-echo "Running with opening net"
-$exep/$EXE nn_type_m -1 nn_type_e -1 go quit
-
-if [ $nn_type_m -ge 0 ]; then
-if [ $DEV = "gpu" ]; then
-echo "Generating calibrate.dat"
-$exep/$EXE use_nn 0 nn_type ${nn_type_m} runinpnn calibrate.epd calibrate.dat quit
-fi
-echo "Running with midgame net"
-$exep/$EXE nn_type_e -1 setboard 1r1q2k1/5pp1/2p4p/4p3/1PPpP2P/Q1n3P1/1R3PB1/6K1 w - - 5 24 go quit
-fi
-
-if [ $nn_type_e -ge 0 ]; then
-if [ $DEV = "gpu" ]; then
-echo "Generating calibrate.dat"
-$exep/$EXE use_nn 0 nn_type ${nn_type_e} runinpnn calibrate.epd calibrate.dat quit
-fi
-echo "Running with endgame net"
-$exep/$EXE nn_type_m -1 setboard 6k1/5R2/1p5p/p1b3p1/6P1/8/r6P/5R1K w - - 2 38 go quit
-fi
-
+echo "Making a test run"
+$exep/$EXE go quit

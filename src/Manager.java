@@ -269,8 +269,10 @@ public class Manager {
                         ObserverEngines.get(ObserverEngines.size() - 1).start();
                         while(!eng.isDone())
                             ;
-                        m1.addLastObserver();
-                        Observe(eng,m1.workID);
+                        if(!eng.hasFailed()) {
+                            m1.addLastObserver();
+                            Observe(eng,m1.workID);
+                        }
                     }
                 } catch (Exception e) {
                     m1.printDebug(e.getMessage(),0);
