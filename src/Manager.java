@@ -434,8 +434,8 @@ public class Manager {
                 network_pb = args[count++];
             } else if(Engine.isSame(cmd,"-parameters")) {
                 workID = Integer.parseInt(args[count++].trim());
-                parameters = new String[4];
-                for(int i = 0; i < 4; i++)
+                parameters = new String[5];
+                for(int i = 0; i < 5; i++)
                     parameters[i] = args[count++];
 
                 try {
