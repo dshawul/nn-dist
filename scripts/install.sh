@@ -1,21 +1,33 @@
 #!/bin/bash
 
+set -e
+
 # display help
 display_help() {
-    echo "Usage: $0 [OS] [MACHINE] "
+    echo "Usage: $0  "
     echo
-    echo "  -h,--help     Display this help message."
+    echo "  -h,--help          Display this help message."
+    echo "  -p,--precision     Precision to use FLOAT/HALF/INT8."
+    echo "  -t,--threads       Threads per GPU/CPU cores."
     echo
-    echo "Example: ./install.sh"
+    echo "Example: ./install.sh -p INT8 -t 160"
     echo
 }
 
 if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
-  display_help
-  exit 0
+    display_help
+    exit 0
 fi
 
-set -eux
+# number of cores and gpus
+CPUS=`grep -c ^processor /proc/cpuinfo`
+if [ ! -z `which nvidia-smi` ]; then
+    GPUS=0
+    DEV=gpu
+else
+    GPUS=1
+    DEV=cpu
+fi
 
 # Autodetect operating system
 OSD=windows
@@ -23,16 +35,6 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
   OSD=ubuntu
 elif [[ "$OSTYPE" == "darwin"* ]]; then
   OSD=macosx
-fi
-
-# number of cores and gpus
-CPUS=`grep -c ^processor /proc/cpuinfo`
-if [ ! -z `which nvidia-smi` ]; then
-    GPUS=`nvidia-smi --query-gpu=name --format=csv,noheader | wc -l`
-    DEV=gpu
-else
-    GPUS=1
-    DEV=cpu
 fi
 
 # Select
@@ -43,11 +45,7 @@ VERSION=3.0        # Version of scorpio
 # paths
 VR=`echo $VERSION | tr -d '.'`
 EGBB=nnprobe-${OS}-${DEV}
-if [ $DEV = "gpu" ]; then
-    NET="nets-scorpio"
-else
-    NET="nets-scorpio"
-fi
+NET="nets-scorpio"
 
 # download
 SCORPIO=Scorpio-$(date '+%d-%b-%Y')
@@ -75,22 +73,6 @@ cd ${EGBB}
 chmod 755 *
 cd ../..
 
-# number of threads
-delay=0
-if [ $DEV = "gpu" ]; then
-    if [ $CPUS -le 4 ] || [ $GPUS -ge 2 ]; then
-       delay=1
-    fi
-    if [ $CPUS -eq 1 ]; then
-        mt=$((GPUS*64))
-    else
-        mt=$((GPUS*128))
-    fi
-else
-    mt=$((CPUS*4))
-    delay=1
-fi
-
 #paths
 cd $SCORPIO
 PD=`pwd`
@@ -108,8 +90,8 @@ if [ $DEV = "gpu" ]; then
     wdl_head_e=1
     wdl_head_m=0
 else
-    nnp=${PD}/nets-scorpio/ens-net-6x64.pb
-    nnp_e=${PD}/nets-scorpio/ens-net-6x64.pb
+    nnp=${PD}/nets-scorpio/ens-net-12x128.pb
+    nnp_e=${PD}/nets-scorpio/ens-net-12x128.pb
     nnp_m=
     nn_type=0
     nn_type_e=-1
@@ -127,6 +109,51 @@ else
 fi
 cd $exep
 
+#determin GPU props
+if [ $DEV = "gpu" ]; then
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${egbbp}
+    cd $egbbp
+    ./device
+    THREADS=`./device --mp`
+    PREC=HALF
+    HAS=`./device --fp16`
+    if [ "$HAS" = "N" ]; then
+        PREC=FLOAT
+    fi
+    cd $exep
+else
+    PREC=FLOAT
+    THREADS=4
+fi
+
+# process cmd line arguments
+while ! [ -z "$1" ]; do
+    case $1 in
+        -p | --precision )
+            shift
+            PREC=$1
+            ;;
+        -t | --threads )
+            shift
+            THREADS=$1
+            ;;
+    esac
+    shift
+done
+
+# number of threads
+delay=0
+if [ $DEV = "gpu" ]; then
+    mt=$((GPUS*THREADS))
+    rt=$((mt/CPUS))
+    if [ $rt -ge 10 ]; then
+       delay=1
+    fi
+else
+    mt=$((CPUS*THREADS))
+    delay=1
+fi
+
 # Edit scorpio.ini
 egbbp_=$(echo $egbbp | sed 's_/_\\/_g')
 nnp_=$(echo $nnp | sed 's_/_\\/_g')
@@ -135,7 +162,7 @@ nnp_m_=$(echo $nnp_m | sed 's_/_\\/_g')
 
 sed -i "s/^egbb_path.*/egbb_path                ${egbbp_}/g" scorpio.ini
 sed -i "s/^delay.*/delay                    ${delay}/g" scorpio.ini
-sed -i "s/^float_type.*/float_type               HALF/g" scorpio.ini
+sed -i "s/^float_type.*/float_type               ${PREC}/g" scorpio.ini
 
 if [ $DEV = "gpu" ]; then
     sed -i "s/^device_type.*/device_type              GPU/g" scorpio.ini
