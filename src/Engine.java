@@ -343,7 +343,7 @@ class TcpClientEngine extends SocketEngine {
         super(cmd);
         path = "tcp";
         type = Type.TCP;
-	net_recieved = false;
+        net_recieved = false;
     }
     private boolean processLogin(String str) {
         if(loginPattern.matcher(str).matches()) {
@@ -384,21 +384,22 @@ class TcpClientEngine extends SocketEngine {
                 String net;
                 if ( isSame(cmd,"<network-uff>") ) {
                     net = "net.uff";
-		    String dir = System.getProperty("user.dir") + File.separator;
-		    String[] delcmd = null;
-		    if(isWindows)
-			delcmd = new String[]{"cmd","/c","DEL " + dir + "*.trt"};
-		    else
-			delcmd = new String[]{"bash","-c","rm -rf " + dir + "*.trt"};
-		    try {
-		        Process proc = Runtime.getRuntime().exec(delcmd);
-			proc.waitFor();
-		    } catch (Exception e) {
+                    String dir = System.getProperty("user.dir") + File.separator;
+                    String[] delcmd = null;
+                    if(isWindows)
+                        delcmd = new String[]{"cmd","/c","DEL " + dir + "*.trt"};
+                    else
+                        delcmd = new String[]{"bash","-c","rm -rf " + dir + "*.trt"};
+                    try {
+                        Process proc = Runtime.getRuntime().exec(delcmd);
+                        proc.waitFor();
+                    } catch (Exception e) {
                         printDebug("Could not delete trt files!");
-	            }
-		} else
+                    }
+                } else {
                     net = "net.pb";
-		net_recieved = true;
+                }
+                net_recieved = true;
                 recvSaveFile(net,false);
             }
         }
