@@ -176,7 +176,7 @@ public class Manager {
         InstalledEngines = new ArrayList<Engine>();
         ObserverEngines = new ArrayList<Engine>();
         server = null;
-        server_port = 6000;
+        server_port = 48555;
         isServer = false;
         InstallEngines();
     }
