@@ -344,6 +344,7 @@ public class Manager {
             e.send(message);
             
             //pb
+            /*
             content = Files.readAllBytes(Paths.get(network_pb));
             
             message = "<network-pb>\n";
@@ -354,6 +355,7 @@ public class Manager {
             
             message = "</network-pb>";
             e.send(message);
+            */
         } catch (Exception ex) {
             System.out.println("Error sending networks: " + ex.getMessage());
         }

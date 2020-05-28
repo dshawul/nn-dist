@@ -53,10 +53,10 @@ done
 # number of cores and gpus
 CPUS=`grep -c ^processor /proc/cpuinfo`
 if [ ! -z `which nvidia-smi` ]; then
-    GPUS=0
+    GPUS=1
     DEV=gpu
 else
-    GPUS=1
+    GPUS=0
     DEV=cpu
 fi
 

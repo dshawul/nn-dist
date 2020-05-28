@@ -94,10 +94,11 @@ powershell Expand-Archive -Force %CWD%%FILENAME% -DestinationPath %CWD%
 DEL %CWD%%FILENAME%
 
 REM --------- download networks
+SET NETS=nets-scorpio.zip
 IF %GPUS% NEQ 0 (
-    SET NETS=nets-scorpio.zip nets-lczero.zip nets-maddex.zip
-) ELSE (
-    SET NETS=nets-scorpio.zip
+    IF %ILCNET% NEQ 0 (
+       SET NETS=nets-scorpio.zip nets-lczero.zip nets-maddex.zip
+    )
 )
 for %%N in ( %NETS% ) DO (
     bitsadmin /transfer mydownload /dynamic /download /priority FOREGROUND "%LNK%/%VERSION%/%%N" %CWD%%%N
