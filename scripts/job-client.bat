@@ -4,7 +4,7 @@ SETLOCAL ENABLEDELAYEDEXPANSION
 REM setup parameters for selfplay
 SET SC=%cd%\Scorpio\bin\Windows
 SET EXE=scorpio.bat
-SET G=1024
+SET G=512
 SET SV=%1
 SET CPUCT=%2
 SET POL_TEMP=%3
