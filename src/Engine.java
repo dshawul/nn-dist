@@ -46,7 +46,6 @@ public class Engine extends Thread {
     public void kill() {}
     public void send(String str) {}
     public void sendFile(byte[] content) {}
-    public void recvFile(byte[] content, int size) {}
     boolean isDone() {
         return true;
     }
@@ -154,27 +153,6 @@ abstract class SocketEngine extends Engine {
                 return buffer.toString();
         } catch (Exception e) {};
         return null;
-    }
-    @Override
-    public void sendFile(byte[] content) {
-        try {
-            output_stream.write(content, 0, content.length);
-            output_stream.flush();
-        } catch (Exception e) {}
-    }
-    @Override
-    public void recvFile(byte[] content, int length) {
-        try {
-            int rd = 0;
-            while (rd < length) {
-                int result = input_stream.read(content, rd, length - rd);
-                if (result == -1) 
-                    break;
-                rd += result;
-            }
-        } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
-        }
     }
     boolean is_ready() {
         boolean ready = false;
@@ -311,19 +289,36 @@ abstract class SocketEngine extends Engine {
         }
         super.kill();
     }
+    @Override
+    public void sendFile(byte[] content) {
+        try {
+            output_stream.write(content, 0, content.length);
+            output_stream.flush();
+        } catch (Exception e) {
+            System.out.println("Error sending file: " + e.getMessage());
+        }
+    }
     public void recvSaveFile(String name, boolean append) {
         String cmd = readLn();
         int length = Integer.parseInt(cmd.trim());
         byte[] buffer = new byte[length];
-        printDebug("Recieving " + name + " : " + cmd + " bytes");
-        recvFile(buffer, length);
         try {
+            printDebug("Recieving " + name + " : " + cmd + " bytes");
+            int rd = 0;
+            while (rd < length) {
+                int result = input_stream.read(buffer, rd, length - rd);
+                if (result == -1) 
+                    break;
+                rd += result;
+            }
             FileOutputStream fos = new FileOutputStream(name, append);
             synchronized(this) {
                 fos.write(buffer, 0, length);
             }
             fos.close();
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            System.out.println("Error recieving data. Message: " + e.getMessage());
+        }
         cmd = readLn();
         printDebug(cmd);
     }

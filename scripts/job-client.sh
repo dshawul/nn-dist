@@ -5,7 +5,7 @@ set -e
 #setup parameters for selfplay
 SC=./Scorpio/bin/Linux         # workding directory of engine
 EXE=scorpio.sh                 # engine executable
-G=1024                          # games per worker
+G=512                          # games per worker
 SV=$1                          # mcts simulations
 CPUCT=$2                       # Cpuct constant
 POL_TEMP=$3                    # Policy temeprature
