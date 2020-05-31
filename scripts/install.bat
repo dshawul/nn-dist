@@ -176,7 +176,6 @@ IF %GPUS% NEQ 0 (
     IF "%PREC%"=="" ( SET PREC=FLOAT )
     IF "%THREADS%"=="" ( SET /a THREADS=%NUMBER_OF_PROCESSORS%*%FACTOR%*2 )
 )
-ENDLOCAL
 
 REM ---------- number of threads
 SET delay=0
@@ -191,7 +190,6 @@ IF %GPUS% NEQ 0 (
 )
 
 REM ---------- edit scorpio.ini
-SETLOCAL ENABLEDELAYEDEXPANSION
 cd "%CWD%bin/Windows"
 IF EXIST output.txt DEL /F output.txt
 for /F "delims=" %%A in (scorpio.ini) do (
@@ -282,3 +280,4 @@ ENDLOCAL
 REM ----------
 echo "Making a test run"
 CALL %EXE% go quit
+cd ..
