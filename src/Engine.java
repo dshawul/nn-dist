@@ -141,7 +141,11 @@ abstract class SocketEngine extends Engine {
     }
     @Override
     public void send(String str) {
-        output.println(str);
+        try {
+            output.println(str);
+        } catch(Exception e) {
+            printDebug("Send:" + e.getMessage());
+        }
     }
     public String readLn() {
         StringBuffer buffer = new StringBuffer();
@@ -172,85 +176,103 @@ abstract class SocketEngine extends Engine {
     @Override
     @SuppressWarnings("unused")
     public void run() {
-        try {
-            if(isClient) {
-                printDebug("Trying to connect to server...");
 
-                SocketAddress sockaddr = new InetSocketAddress(host, port);
-                mySocket = new Socket();
-                mySocket.connect(sockaddr, 10000);
+        boolean reconnect = false;
 
-                printDebug("Connected!");
-            }
+        do {
 
-            input_stream = mySocket.getInputStream();
-            output_stream = mySocket.getOutputStream();
-            output = new PrintWriter( new OutputStreamWriter(output_stream), true);
-            
-            String str;
+            try {
 
-            if(!isClient) {
-                final String Intro = 
-                    "\n\n" +               
-                    "           .---.            ,--,                                ____                    \n" +
-                    "          /. ./|          ,--.'|                              ,'  , `.                  \n" +     
-                    "      .--'.  ' ;          |  | :               ,---.       ,-+-,.' _ |                  \n" +     
-                    "     /__./ \\ : |          :  : '              '   ,'\\   ,-+-. ;   , ||                \n" +     
-                    " .--'.  '   \\' .   ,---.  |  ' |      ,---.  /   /   | ,--.'|'   |  || ,---.           \n" +     
-                    "/___/ \\ |    ' '  /     \\ '  | |     /     \\.   ; ,. :|   |  ,', |  |,/     \\       \n" +     
-                    ";   \\  \\;      : /    /  ||  | :    /    / ''   | |: :|   | /  | |--'/    /  |        \n" +     
-                    " \\   ;  `      |.    ' / |'  : |__ .    ' / '   | .; :|   : |  | ,  .    ' / |         \n" +     
-                    "  .   \\    .\\  ;'   ;   /||  | '.'|'   ; :__|   :    ||   : |  |/   '   ;   /|        \n" +     
-                    "   \\   \\   ' \\ |'   |  / |;  :    ;'   | '.'|\\   \\  / |   | |`-'    '   |  / |     \n" +     
-                    "    :   '  |--\" |   :    ||  ,   / |   :    : `----'  |   ;/        |   :    |         \n" +     
-                    "     \\   \\ ;     \\   \\  /  ---`-'   \\   \\  /          '---'          \\   \\  /   \n" +     
-                    "      '---\"       `----'             `----'                           `----'           \n" +     
-                    "                                                                                        \n" +     
-                    "\n\n" + 
-                    "            Welcome to NTS (Network training server) for Scorpio Zero                   \n" +
-                    "                        http://scorpiozero.ddns.net                                     \n" +
-                    "                                                                                        \n";
-                
-                send(Intro);
+                if(isClient) {
+                    printDebug("Trying to connect to server...");
 
-                String info = "\n\n Please enter a username and password and an account will be created.\n" +
-                              " The password will be stored in plain text, so avoid using passwords used \n" +
-                              " for sensitive applications. \n\n";
-                send(info);
+                    SocketAddress sockaddr = new InetSocketAddress(host, port);
+                    mySocket = new Socket();
+                    mySocket.connect(sockaddr, 10000);
 
-                while(true) {
-                    send("login:");
-                    userName = readLn().trim();
-                    send("password:");
-                    passWord = readLn().trim();
-                    if(!myManager.dbm.checkUser(userName, passWord)) {
-                        send("\nUsername password combination is incorrect. Please try again.\n");
-                        continue;
-                    }
-                    break;
+                    printDebug("Connected!");
                 }
-                
-                name = userName + "@" + host;
-                name = "[" + userName + "]";
-                printDebug("user = [" + name + "]");
-                
-                send("\n**** Starting NTS session as " + userName + " ****\n");
-            }
-            
-            start_t = System.currentTimeMillis();
-            done = State.CONNECTED;
 
-            while((str = readLn()) != null) {
-                if(!processCommands(str))
-                    break;
+                input_stream = mySocket.getInputStream();
+                output_stream = mySocket.getOutputStream();
+                output = new PrintWriter( new OutputStreamWriter(output_stream), true);
+
+                String str;
+
+                if(!isClient) {
+                    final String Intro = 
+                        "\n\n" +               
+                        "           .---.            ,--,                                ____                    \n" +
+                        "          /. ./|          ,--.'|                              ,'  , `.                  \n" +     
+                        "      .--'.  ' ;          |  | :               ,---.       ,-+-,.' _ |                  \n" +     
+                        "     /__./ \\ : |          :  : '              '   ,'\\   ,-+-. ;   , ||                \n" +     
+                        " .--'.  '   \\' .   ,---.  |  ' |      ,---.  /   /   | ,--.'|'   |  || ,---.           \n" +     
+                        "/___/ \\ |    ' '  /     \\ '  | |     /     \\.   ; ,. :|   |  ,', |  |,/     \\       \n" +     
+                        ";   \\  \\;      : /    /  ||  | :    /    / ''   | |: :|   | /  | |--'/    /  |        \n" +     
+                        " \\   ;  `      |.    ' / |'  : |__ .    ' / '   | .; :|   : |  | ,  .    ' / |         \n" +     
+                        "  .   \\    .\\  ;'   ;   /||  | '.'|'   ; :__|   :    ||   : |  |/   '   ;   /|        \n" +     
+                        "   \\   \\   ' \\ |'   |  / |;  :    ;'   | '.'|\\   \\  / |   | |`-'    '   |  / |     \n" +     
+                        "    :   '  |--\" |   :    ||  ,   / |   :    : `----'  |   ;/        |   :    |         \n" +     
+                        "     \\   \\ ;     \\   \\  /  ---`-'   \\   \\  /          '---'          \\   \\  /   \n" +     
+                        "      '---\"       `----'             `----'                           `----'           \n" +     
+                        "                                                                                        \n" +     
+                        "\n\n" + 
+                        "            Welcome to NTS (Network training server) for Scorpio Zero                   \n" +
+                        "                        http://scorpiozero.ddns.net                                     \n" +
+                        "                                                                                        \n";
+
+                    send(Intro);
+
+                    String info = "\n\n Please enter a username and password and an account will be created.\n" +
+                                  " The password will be stored in plain text, so avoid using passwords used \n" +
+                                  " for sensitive applications. \n\n";
+                    send(info);
+
+                    while(true) {
+                        send("login:");
+                        userName = readLn().trim();
+                        send("password:");
+                        passWord = readLn().trim();
+                        if(!myManager.dbm.checkUser(userName, passWord)) {
+                            send("\nUsername password combination is incorrect. Please try again.\n");
+                            continue;
+                        }
+                        break;
+                    }
+
+                    name = userName + "@" + host;
+                    name = "[" + userName + "]";
+                    printDebug("user = [" + name + "]");
+
+                    send("\n**** Starting NTS session as " + userName + " ****\n");
+                }
+
+                start_t = System.currentTimeMillis();
+                done = State.CONNECTED;
+
+                while((str = readLn()) != null) {
+                    if(!processCommands(str))
+                        break;
+                }
+            } catch (Exception e) {
+                printDebug("Engine failure: " + cmdLine);
+                printDebug("Error message: " + e.getMessage());
             }
-            if(!isClient)
-                printDebug("Server disconnected.");
-            else
-                printDebug("Client disconnected.");
-        } catch (Exception e) {
-            printDebug("Engine failure: " + cmdLine + " Error message: " + e.getMessage());
-        }
+
+            if(isClient) {
+                try {
+                    Thread.sleep(30000);
+                } catch(Exception e) {}
+                reconnect = true;
+                printDebug("Reconnecting ...");
+            }
+
+        } while(reconnect);
+
+        if(!isClient)
+            printDebug("Client disconnected.");
+        else
+            printDebug("Server disconnected.");
         
         done = State.FAILED;
         Manager.HandleDisconnects(this);
@@ -380,6 +402,20 @@ class TcpClientEngine extends SocketEngine {
             return 0;
         }
     }
+    private void deleteFiles(String names, boolean isWindows) {
+        String dir = System.getProperty("user.dir") + File.separator;
+        String[] delcmd = null;
+        if(isWindows)
+            delcmd = new String[]{"cmd","/c","DEL " + dir + names};
+        else
+            delcmd = new String[]{"bash","-c","rm -rf " + dir + names};
+        try {
+            Process proc = Runtime.getRuntime().exec(delcmd);
+            proc.waitFor();
+        } catch (Exception e) {
+            printDebug("Could not delete files: " + names);
+        }
+    }
     @Override
     boolean processCommands(String str) {
         printDebug(str);
@@ -428,22 +464,9 @@ class TcpClientEngine extends SocketEngine {
                     net_recieved = true;
                 }
             } else if(isSame(cmd,"<network-uff>")) {
-                String net;
-                net = "net.uff";
-                String dir = System.getProperty("user.dir") + File.separator;
-                String[] delcmd = null;
-                if(isWindows)
-                    delcmd = new String[]{"cmd","/c","DEL " + dir + "*.trt"};
-                else
-                    delcmd = new String[]{"bash","-c","rm -rf " + dir + "*.trt"};
-                try {
-                    Process proc = Runtime.getRuntime().exec(delcmd);
-                    proc.waitFor();
-                } catch (Exception e) {
-                    printDebug("Could not delete trt files!");
-                }
+                deleteFiles("*.trt",isWindows);
                 net_recieved = true;
-                recvSaveFile(net,false);
+                recvSaveFile("net.uff",false);
             }
         }
         
@@ -482,40 +505,41 @@ class TcpClientEngine extends SocketEngine {
 
             // send games
             try {
+
                 byte[] content;
                 String message;
-                
+
                 //games
                 content = Files.readAllBytes(Paths.get("cgames.pgn"));
-                
+
                 int count = new String(content).split("Result").length - 1;
-                
+
                 message = "<games>\n";
                 message += count + "\n";
                 message += content.length;
                 send(message);
-                
+
                 sendFile(content);
-                
+
                 message = "</games>";
                 send(message);
-                
+
                 //train
                 content = Files.readAllBytes(Paths.get("ctrain.epd"));
-                        
+
                 message = "<train>\n";
                 message += content.length;
                 send(message);
-                
+
                 sendFile(content);
-                
+
                 message = "</train>";
                 send(message);
-                
+
                 if(output.checkError()) {
-                    printDebug("Server down!");
-                    return true;
+                    return false;
                 }
+
             } catch (Exception e) {
                 printDebug("Could not send games to server!");
                 return false;
