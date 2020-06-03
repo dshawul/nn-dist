@@ -158,6 +158,8 @@ class DatabaseManager {
 public class Manager {
     public static DatabaseManager dbm;
     public static final String server_address = "scorpiozero.ddns.net";
+    public static final int version = 1;
+    public static final int min_version = 1;
     public static ServerSocket server;
     public static int server_port;
     public static boolean isServer;
@@ -220,7 +222,9 @@ public class Manager {
             } else {
                 Install(server_address + " " + server_port + "=tcp");
             }
-        } catch(Exception e) {}
+        } catch(Exception e) {
+            System.out.println("InstallEngines: " + e.getMessage());
+        }
     }
     static void WriteEngines(String user, String pass) {
         try {
@@ -233,7 +237,9 @@ public class Manager {
                 writer.write(str);
                 writer.close();
             }
-        } catch(Exception e) {}
+        } catch(Exception e) {
+            System.out.println("WriteEngines: " + e.getMessage());
+        }
     }
     public void printDebug(String str,int id) {
         if(isVerbose)
@@ -252,7 +258,7 @@ public class Manager {
             checksum.update(content, 0, content.length);
             net_checksum = checksum.getValue();
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            System.out.println("computeCheckusm: " + e.getMessage());
         }
     }
     public static void startServer() {
@@ -266,7 +272,7 @@ public class Manager {
         try {
             server = new ServerSocket(server_port);
         } catch (Exception e) {
-            m1.printDebug(e.getMessage(),0);
+            m1.printDebug("startServer: " + e.getMessage(),0);
         }
         
         Runnable r = new Runnable() {
@@ -289,7 +295,7 @@ public class Manager {
                         }
                     }
                 } catch (Exception e) {
-                    m1.printDebug(e.getMessage(),0);
+                    m1.printDebug("startServer: " + e.getMessage(),0);
                 }
             }
         };
@@ -305,7 +311,7 @@ public class Manager {
             m1.printDebug("Stopping server : " + server,0);
             server.close();
         } catch (Exception e) {
-            m1.printDebug(e.getMessage(),0);
+            m1.printDebug("stopServer: " + e.getMessage(),0);
         }
     }
     static String getWho() {
@@ -379,11 +385,24 @@ public class Manager {
         String message = "";
         try {
             message = "<checksum>\n";
-            message += net_checksum;
-            message += "\n</checksum>";
+            message += net_checksum + "\n";
+            message += network_uff + "\n";
+            message += "</checksum>";
             e.send(message);
         } catch (Exception ex) {
             System.out.println("Error sending checksum: " + ex.getMessage());
+        }
+    }
+    static void SendVersion(Engine e) {
+        String message = "";
+        try {
+            message = "<version>\n";
+            message += version + "\n";
+            message += min_version + "\n";
+            message += "</version>";
+            e.send(message);
+        } catch (Exception ex) {
+            System.out.println("Error sending version: " + ex.getMessage());
         }
     }
     static void SendNetworkAll(int ID) {
@@ -393,6 +412,7 @@ public class Manager {
                 for(Engine e: m.WorkObservers) {
                     SendParameters(e);
                     SendChecksum(e);
+                    SendVersion(e);
                 }
             }
         }
@@ -403,6 +423,7 @@ public class Manager {
                 m.WorkObservers.add(e);
                 SendParameters(e);
                 SendChecksum(e);
+                SendVersion(e);
             }
         }
     }
@@ -457,7 +478,7 @@ public class Manager {
                 try {
                     dbm.checkWork(workID,parameters);
                 } catch (SQLException e) {
-                    printDebug(e.getMessage(),0);
+                    printDebug("Database update parametters: " + e.getMessage(),0);
                 }
             } else if(Engine.isSame(cmd,"-update-network")) {
                 SendNetworkAll(workID);
