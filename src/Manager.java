@@ -19,6 +19,8 @@ import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.sql.ResultSet;
+import java.util.zip.Adler32;
+import java.util.zip.Checksum;
 
 /** Database manager
  */
@@ -170,6 +172,7 @@ public class Manager {
     public static int workID;
 
     private boolean isVerbose = false;
+    public static long net_checksum = 0;
     
     static {
         allManagers = new LinkedList<Manager>();
@@ -240,6 +243,17 @@ public class Manager {
         System.out.println(str);
     }
     public void onStart() {
+    }
+    public static void computeChecksum() {
+        try {
+            File net_uff = new File(network_uff);
+            byte[] content = Files.readAllBytes(Paths.get(network_uff));
+            Checksum checksum = new Adler32();
+            checksum.update(content, 0, content.length);
+            net_checksum = checksum.getValue();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
     public static void startServer() {
         if(isServer)
@@ -326,6 +340,8 @@ public class Manager {
         String message = "";
         try {
             byte[] content;
+
+            System.out.println("Sending network to " + e.name);
             
             //uff
             File net_uff = new File(network_uff);
@@ -342,20 +358,7 @@ public class Manager {
             
             message = "</network-uff>";
             e.send(message);
-            
-            //pb
-            /*
-            content = Files.readAllBytes(Paths.get(network_pb));
-            
-            message = "<network-pb>\n";
-            message += content.length;
-            e.send(message);
-            
-            e.sendFile(content);
-            
-            message = "</network-pb>";
-            e.send(message);
-            */
+
         } catch (Exception ex) {
             System.out.println("Error sending networks: " + ex.getMessage());
         }
@@ -372,12 +375,24 @@ public class Manager {
             System.out.println("Error sending parameters: " + ex.getMessage());
         }
     }
+    static void SendChecksum(Engine e) {
+        String message = "";
+        try {
+            message = "<checksum>\n";
+            message += net_checksum;
+            message += "\n</checksum>";
+            e.send(message);
+        } catch (Exception ex) {
+            System.out.println("Error sending checksum: " + ex.getMessage());
+        }
+    }
     static void SendNetworkAll(int ID) {
+        computeChecksum();
         for(Manager m: allManagers) {
             if(m.workID == ID) {
                 for(Engine e: m.WorkObservers) {
                     SendParameters(e);
-                    SendNetwork(e);
+                    SendChecksum(e);
                 }
             }
         }
@@ -386,9 +401,8 @@ public class Manager {
         for(Manager m: allManagers) {
             if(m.workID == ID) {
                 m.WorkObservers.add(e);
-                m.printDebug("Sending network",0);
                 SendParameters(e);
-                SendNetwork(e);
+                SendChecksum(e);
             }
         }
     }

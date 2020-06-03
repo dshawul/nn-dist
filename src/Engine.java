@@ -1,4 +1,3 @@
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -7,6 +6,10 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.FileWriter;
+import java.io.FileReader;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -151,14 +154,18 @@ abstract class SocketEngine extends Engine {
             }
             if(c != -1)
                 return buffer.toString();
-        } catch (Exception e) {};
+        } catch (Exception e) {
+            printDebug("ReadLn:" + e.getMessage());
+        };
         return null;
     }
     boolean is_ready() {
         boolean ready = false;
         try {
             ready = (input_stream.available() >  0);
-        } catch (Exception e) {};
+        } catch (Exception e) {
+            printDebug("is_ready:" + e.getMessage());
+        };
         return ready;
     }
 
@@ -224,7 +231,7 @@ abstract class SocketEngine extends Engine {
                 }
                 
                 name = userName + "@" + host;
-                name = "[" + userName + "] [" + passWord + "]";
+                name = "[" + userName + "]";
                 printDebug("user = [" + name + "]");
                 
                 send("\n**** Starting NTS session as " + userName + " ****\n");
@@ -350,6 +357,29 @@ class TcpClientEngine extends SocketEngine {
         }
         return false;
     }
+    private long sendChecksum() {
+        try {
+            File settings = new File("checksum.txt");
+            if(settings.exists()) {
+                String message = "<checksum>\n";
+                BufferedReader reader = new BufferedReader( 
+                    new FileReader("checksum.txt"));
+                String cmd = reader.readLine();
+                long checksum = Long.parseLong(cmd.trim());
+                message += cmd;
+                message += "\n</checksum>";
+                send(message);
+                reader.close();
+                return checksum;
+            } else {
+                send("<checksum>\n0\n</checksum>");
+                return 0;
+            }
+        } catch(Exception e) {
+            printDebug("sendChecksum:" + e.getMessage());
+            return 0;
+        }
+    }
     @Override
     boolean processCommands(String str) {
         printDebug(str);
@@ -375,24 +405,42 @@ class TcpClientEngine extends SocketEngine {
                     parameters += sc.next() + " ";
                 cmd = readLn();
                 printDebug(cmd);
-            } else if(isSame(cmd,"<network-uff>") || isSame(cmd,"<network-pb>")) {
-                String net;
-                if ( isSame(cmd,"<network-uff>") ) {
-                    net = "net.uff";
-                    String dir = System.getProperty("user.dir") + File.separator;
-                    String[] delcmd = null;
-                    if(isWindows)
-                        delcmd = new String[]{"cmd","/c","DEL " + dir + "*.trt"};
-                    else
-                        delcmd = new String[]{"bash","-c","rm -rf " + dir + "*.trt"};
+            } else if(isSame(cmd,"<checksum>")) {
+
+                cmd = readLn();
+                printDebug(cmd);
+                long checksum = Long.parseLong(cmd.trim());
+                cmd = readLn();
+                printDebug(cmd);
+
+                long checksum_exist = sendChecksum();
+                if(checksum != checksum_exist) {
                     try {
-                        Process proc = Runtime.getRuntime().exec(delcmd);
-                        proc.waitFor();
+                        BufferedWriter writer = new BufferedWriter(
+                            new FileWriter("checksum.txt"));
+                        String ck = Long.toString(checksum);
+                        writer.write(ck);
+                        writer.close();
                     } catch (Exception e) {
-                        printDebug("Could not delete trt files!");
+                        printDebug("Checksum:" + e.getMessage());
                     }
                 } else {
-                    net = "net.pb";
+                    net_recieved = true;
+                }
+            } else if(isSame(cmd,"<network-uff>")) {
+                String net;
+                net = "net.uff";
+                String dir = System.getProperty("user.dir") + File.separator;
+                String[] delcmd = null;
+                if(isWindows)
+                    delcmd = new String[]{"cmd","/c","DEL " + dir + "*.trt"};
+                else
+                    delcmd = new String[]{"bash","-c","rm -rf " + dir + "*.trt"};
+                try {
+                    Process proc = Runtime.getRuntime().exec(delcmd);
+                    proc.waitFor();
+                } catch (Exception e) {
+                    printDebug("Could not delete trt files!");
                 }
                 net_recieved = true;
                 recvSaveFile(net,false);
@@ -501,15 +549,25 @@ class TcpServerEngine extends SocketEngine {
             cmd = sc.next();
             if(isSame(cmd,"<games>")) {
                 cmd = readLn();
+                printDebug(cmd);
                 int games = Integer.parseInt(cmd.trim());
                 try {
                     myManager.dbm.addContrib(userName,myManager.workID,games);
                 } catch (Exception e) {
-                    printDebug(e.getMessage());
+                    printDebug("games:" + e.getMessage());
                 }
                 recvSaveFile("cgames.pgn",true);
             } else if(isSame(cmd,"<train>")) {
                 recvSaveFile("ctrain.epd",true);
+            } else if(isSame(cmd,"<checksum>")) {
+                cmd = readLn();
+                printDebug(cmd);
+                long checksum = Long.parseLong(cmd.trim());
+                cmd = readLn();
+                printDebug(cmd);
+                if(checksum != myManager.net_checksum) {
+                    myManager.SendNetwork(this);
+                }
             }
         }
         
