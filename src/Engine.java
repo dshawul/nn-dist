@@ -151,10 +151,13 @@ abstract class SocketEngine extends Engine {
         StringBuffer buffer = new StringBuffer();
         try {
             int c = input_stream.read();
-            for (; c != -1; c = input_stream.read()) {
+            while(true) {
+                if (c == -1)
+                    break;
                 if (c == '\n')
                     break;
                 buffer.append((char)c);
+                c = input_stream.read();
             }
             if(c != -1)
                 return buffer.toString();
@@ -329,12 +332,12 @@ abstract class SocketEngine extends Engine {
             System.out.println("Error sending file: " + e.getMessage());
         }
     }
-    public void recvSaveFile(String name, boolean append) {
+    public void recvSaveFile(String fname, boolean append) {
         String cmd = readLn();
         int length = Integer.parseInt(cmd.trim());
         byte[] buffer = new byte[length];
         try {
-            printDebug("Recieving " + name + " : " + cmd + " bytes");
+            printDebug("Recieving " + fname + " : " + cmd + " bytes from " + name);
             int rd = 0;
             while (rd < length) {
                 int result = input_stream.read(buffer, rd, length - rd);
@@ -342,7 +345,7 @@ abstract class SocketEngine extends Engine {
                     break;
                 rd += result;
             }
-            FileOutputStream fos = new FileOutputStream(name, append);
+            FileOutputStream fos = new FileOutputStream(fname, append);
             synchronized(this) {
                 fos.write(buffer, 0, length);
             }

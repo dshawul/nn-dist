@@ -10,6 +10,7 @@ SET CPUCT=%2
 SET POL_TEMP=%3
 SET NOISE_FRAC=%4
 SET HEAD_TYPE=%5
+SET RAND_TEMP=%6
 
 REM launch multiple jobs with mpi
 SET RANKS=1
@@ -41,7 +42,7 @@ EXIT /B %ERRORLEVEL%
 REM selfplay options
 SET SCOPT=train_data_type %HEAD_TYPE% alphabeta_man_c 0 min_policy_value 0 ^
           nn_type 0 reuse_tree 0 fpu_is_loss 0 fpu_red 0 cpuct_init %CPUCT% ^
-          backup_type 6 policy_temp %POL_TEMP% noise_frac %NOISE_FRAC%
+          backup_type 6 rand_temp %RAND_TEMP% policy_temp %POL_TEMP% noise_frac %NOISE_FRAC%
 
 REM run multiple instances
 :rungames
