@@ -164,7 +164,7 @@ public class Manager {
     public static int server_port;
     public static boolean isServer;
     public static String network_uff;
-    public static String network_pb;
+    public static String network_uff_url;
     public static String[] parameters;
     
     public static List<Manager> allManagers;
@@ -282,7 +282,7 @@ public class Manager {
                     while(isServer) {
                         Socket skt = server.accept();
                         m1.printDebug(skt.toString(),0);       
-                        String cmd = skt.getInetAddress().toString() + " " + skt.getPort();
+                        String cmd = skt.getInetAddress().getHostAddress() + " " + skt.getPort();
                         Engine eng = new TcpServerEngine(cmd,skt);
                         eng.myManager = m1;
                         ObserverEngines.add(eng);
@@ -342,33 +342,6 @@ public class Manager {
     }
     public void removeObserver(Engine e) {
     }
-    static void SendNetwork(Engine e) {
-        String message = "";
-        try {
-            byte[] content;
-
-            System.out.println("Sending network to " + e.name);
-            
-            //uff
-            File net_uff = new File(network_uff);
-            if(net_uff.exists())
-                content = Files.readAllBytes(Paths.get(network_uff));
-            else
-                content = new byte[1];
-            
-            message = "<network-uff>\n";
-            message += content.length;
-            e.send(message);
-            
-            e.sendFile(content);
-            
-            message = "</network-uff>";
-            e.send(message);
-
-        } catch (Exception ex) {
-            System.out.println("Error sending networks: " + ex.getMessage());
-        }
-    }
     static void SendParameters(Engine e) {
         String message = "";
         try {
@@ -386,7 +359,7 @@ public class Manager {
         try {
             message = "<checksum>\n";
             message += net_checksum + "\n";
-            message += network_uff + "\n";
+            message += network_uff_url + "\n";
             message += "</checksum>";
             e.send(message);
         } catch (Exception ex) {
@@ -410,9 +383,7 @@ public class Manager {
         for(Manager m: allManagers) {
             if(m.workID == ID) {
                 for(Engine e: m.WorkObservers) {
-                    SendParameters(e);
                     SendChecksum(e);
-                    SendVersion(e);
                 }
             }
         }
@@ -421,9 +392,9 @@ public class Manager {
         for(Manager m: allManagers) {
             if(m.workID == ID) {
                 m.WorkObservers.add(e);
+                SendVersion(e);
                 SendParameters(e);
                 SendChecksum(e);
-                SendVersion(e);
             }
         }
     }
@@ -467,8 +438,7 @@ public class Manager {
                 printInfo(Manager.getAllObservers());
             } else if(Engine.isSame(cmd,"-network-uff")) {
                 network_uff = args[count++];
-            } else if(Engine.isSame(cmd,"-network-pb")) {
-                network_pb = args[count++];
+                network_uff_url = args[count++];
             } else if(Engine.isSame(cmd,"-parameters")) {
                 workID = Integer.parseInt(args[count++].trim());
                 parameters = new String[args.length - 2];

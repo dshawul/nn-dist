@@ -10,6 +10,9 @@ import java.io.FileWriter;
 import java.io.FileReader;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.net.URL;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -48,7 +51,7 @@ public class Engine extends Thread {
     }
     public void kill() {}
     public void send(String str) {}
-    public void sendFile(byte[] content) {}
+    public boolean sendFile(byte[] content) { return false; }
     boolean isDone() {
         return true;
     }
@@ -244,7 +247,6 @@ abstract class SocketEngine extends Engine {
                     }
 
                     name = userName + "@" + host;
-                    name = "[" + userName + "]";
                     printDebug("user = [" + name + "]");
 
                     send("\n**** Starting NTS session as " + userName + " ****\n");
@@ -264,6 +266,7 @@ abstract class SocketEngine extends Engine {
 
             if(isClient) {
                 try {
+                    printDebug("Waiting for 30 sec ...");
                     Thread.sleep(30000);
                 } catch(Exception e) {
                     printDebug("Sleep: " + e.getMessage());
@@ -324,12 +327,14 @@ abstract class SocketEngine extends Engine {
         super.kill();
     }
     @Override
-    public void sendFile(byte[] content) {
+    public boolean sendFile(byte[] content) {
         try {
             output_stream.write(content, 0, content.length);
             output_stream.flush();
+            return true;
         } catch (Exception e) {
             System.out.println("Error sending file: " + e.getMessage());
+            return false;
         }
     }
     public void recvSaveFile(String fname, boolean append) {
@@ -337,7 +342,7 @@ abstract class SocketEngine extends Engine {
         int length = Integer.parseInt(cmd.trim());
         byte[] buffer = new byte[length];
         try {
-            printDebug("Recieving " + fname + " : " + cmd + " bytes from " + name);
+            printDebug("Recieving " + fname + " : " + length + " bytes from " + name);
             int rd = 0;
             while (rd < length) {
                 int result = input_stream.read(buffer, rd, length - rd);
@@ -351,7 +356,7 @@ abstract class SocketEngine extends Engine {
             }
             fos.close();
         } catch (Exception e) {
-            System.out.println("Error recieving data. Message: " + e.getMessage());
+            System.out.println("Error recieving file: " + e.getMessage());
         }
         cmd = readLn();
         printDebug(cmd);
@@ -368,11 +373,11 @@ abstract class SocketEngine extends Engine {
                 content = Files.readAllBytes(Paths.get("cgames.pgn"));
 
                 int count = new String(content).split("Result").length - 1;
+                printDebug("Sending " + count + " games to server");
 
                 message = "<games>\n";
                 message += count + "\n";
                 message += content.length;
-                printDebug("Sending " + count + " games to server");
                 send(message);
 
                 sendFile(content);
@@ -393,6 +398,7 @@ abstract class SocketEngine extends Engine {
                 send(message);
 
                 if(output.checkError()) {
+                    printDebug("Connection lost!");
                     return false;
                 }
             }
@@ -432,26 +438,21 @@ class TcpClientEngine extends SocketEngine {
         }
         return false;
     }
-    private long sendChecksum() {
+    private long getChecksum() {
         try {
             File settings = new File("checksum.txt");
             if(settings.exists()) {
-                String message = "<checksum>\n";
                 BufferedReader reader = new BufferedReader( 
                     new FileReader("checksum.txt"));
                 String cmd = reader.readLine();
                 long checksum = Long.parseLong(cmd.trim());
-                message += cmd;
-                message += "\n</checksum>";
-                send(message);
                 reader.close();
                 return checksum;
             } else {
-                send("<checksum>\n0\n</checksum>");
                 return 0;
             }
         } catch(Exception e) {
-            printDebug("sendChecksum: " + e.getMessage());
+            printDebug("getChecksum: " + e.getMessage());
             return 0;
         }
     }
@@ -467,6 +468,20 @@ class TcpClientEngine extends SocketEngine {
             proc.waitFor();
         } catch (Exception e) {
             printDebug("Could not delete files: " + names);
+        }
+    }
+    private boolean downloadNet(String FILE_URL, String FILE_NAME) {
+        try {
+            printDebug("Downloading new network from: " + FILE_URL);
+            URL website = new URL(FILE_URL);
+            ReadableByteChannel rbc = Channels.newChannel(website.openStream());
+            FileOutputStream fos = new FileOutputStream(FILE_NAME);
+            fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+            printDebug("Finished downloading netowrk!");
+            return true;
+        } catch (Exception e) {
+            printDebug("Error in downloading network: " + FILE_URL);
+            return false;
         }
     }
     @Override
@@ -499,25 +514,30 @@ class TcpClientEngine extends SocketEngine {
                 cmd = readLn();
                 printDebug(cmd);
                 long checksum = Long.parseLong(cmd.trim());
-                String net_id = readLn();
-                printDebug(net_id);
+                String net_url = readLn();
+                printDebug(net_url);
                 cmd = readLn();
                 printDebug(cmd);
 
-                long checksum_exist = sendChecksum();
+                long checksum_exist = getChecksum();
                 if(checksum == checksum_exist) {
                     net_recieved = true;
                     printDebug("Skipping net download.");
-                }
-                try {
-                    BufferedWriter writer = new BufferedWriter(
-                        new FileWriter("checksum.txt"));
-                    String ck = Long.toString(checksum);
-                    writer.write(ck + "\n");
-                    writer.write(net_id + "\n");
-                    writer.close();
-                } catch (Exception e) {
-                    printDebug("Checksum: " + e.getMessage());
+                } else {
+                    if(downloadNet(net_url,"net.uff")) {
+                        try {
+                            BufferedWriter writer = new BufferedWriter(
+                                new FileWriter("checksum.txt"));
+                            String ck = Long.toString(checksum);
+                            writer.write(ck + "\n");
+                            writer.write(net_url + "\n");
+                            writer.close();
+                            net_recieved = true;
+                            deleteFiles("*.trt",isWindows);
+                        } catch (Exception e) {
+                            printDebug("Checksum: " + e.getMessage());
+                        }
+                    }
                 }
             } else if(isSame(cmd,"<version>")) {
                 cmd = readLn();
@@ -542,10 +562,6 @@ class TcpClientEngine extends SocketEngine {
                          "We recommend you updgrade client to version: " + Manager.version +
                          "\n****************************************************************\n");
                 }
-            } else if(isSame(cmd,"<network-uff>")) {
-                deleteFiles("*.trt",isWindows);
-                net_recieved = true;
-                recvSaveFile("net.uff",false);
             }
         }
         
@@ -631,16 +647,6 @@ class TcpServerEngine extends SocketEngine {
                 recvSaveFile("cgames.pgn",true);
             } else if(isSame(cmd,"<train>")) {
                 recvSaveFile("ctrain.epd",true);
-            } else if(isSame(cmd,"<checksum>")) {
-                cmd = readLn();
-                printDebug(cmd);
-                long checksum = Long.parseLong(cmd.trim());
-                cmd = readLn();
-                printDebug(cmd);
-
-                if(checksum != myManager.net_checksum) {
-                    myManager.SendNetwork(this);
-                }
             }
         }
         
