@@ -198,6 +198,7 @@ abstract class SocketEngine extends Engine {
                     mySocket.connect(sockaddr, 10000);
 
                     printDebug("Connected!");
+                    reconnect = false;
                 }
 
                 input_stream = mySocket.getInputStream();
@@ -266,11 +267,13 @@ abstract class SocketEngine extends Engine {
             }
 
             if(isClient) {
-                try {
-                    printDebug("Waiting for 30 sec ...");
-                    Thread.sleep(30000);
-                } catch(Exception e) {
-                    printDebug("Sleep: " + e.getMessage());
+                if(reconnect) {
+                    try {
+                        printDebug("Waiting for 30 sec ...");
+                        Thread.sleep(30000);
+                    } catch(Exception e) {
+                        printDebug("Sleep: " + e.getMessage());
+                    }
                 }
                 reconnect = true;
                 printDebug("Reconnecting ...");
