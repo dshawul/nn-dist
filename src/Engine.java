@@ -593,12 +593,21 @@ class TcpClientEngine extends SocketEngine {
 
                 BufferedReader stdInput = new BufferedReader(new
                     InputStreamReader(proc.getInputStream()));
+
                 String s = null;
-                while ((s = stdInput.readLine()) != null)
-                    System.out.println(s);
+                while ((s = stdInput.readLine()) != null) {
+                    if(s.startsWith("[")) {
+                        if(hasString(s,"generated"))
+                            System.out.println("\n" + s);
+                        else
+                            System.out.print(s + "\r");
+                    } else if(hasString(s,"Calibrating")) {
+                        System.out.println(s + "\r");
+                    }
+                }
 
                 proc.waitFor();
-                printDebug("Finished executing job");
+                printDebug("Finished executing job!                     ");
             } catch (Exception e) {
                 printDebug("Could not execute job!");
                 return false;
