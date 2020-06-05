@@ -605,7 +605,7 @@ class TcpClientEngine extends SocketEngine {
                         else
                             System.out.print(s + "\r");
                     } else if(hasString(s,"Calibrating")) {
-                        System.out.println(s + "\r");
+                        System.out.print(s + "\r");
                     }
                 }
 

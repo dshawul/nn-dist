@@ -316,27 +316,29 @@ public class Manager {
         }
     }
     static String getWho() {
-        String str = "<who>\n";
+        String str = "\n========= " + ObserverEngines.size() +
+             " clients connected  =========\n";
+        int i = 1;
         for(Engine e: ObserverEngines) {
-            int index = e.name.indexOf('@');
-            str += e.name.substring(0,index);
-            str += "\n";
+            str += i + ". " + e.name + "\n";
+            i++;
         }
-        str += "</who>";
+        str += "===================================================\n";
         return str;
     }
     static String getAllObservers() {
-        String str = "<workers>\n\r";
+        String str = "\n========= " + allManagers.size() + " active trainings =========\n";
         for(Manager m: allManagers) {
-            str += "<Work> " + m.workID + "\n";
+            str = "\n========= " + m.WorkObservers.size() + 
+               " clients working on training run " + m.workID + " =========\n";
+            int i = 1;
             for(Engine e: m.WorkObservers) {
-                int index = e.name.indexOf('@');
-                str += e.name.substring(0,index);
-                str += "\n";
+                str += i + ". " + e.name + "\n";
+                i++;
             }
-            str += "</Work>\n";
+            str += "===================================================\n";
         }
-        str += "</workers>";
+        str += "===================================================\n";
         return str;
     }
     public void addLastObserver() {
@@ -460,7 +462,7 @@ public class Manager {
                              "-help | display this usage message." +
                              "\n\tUse '-<command>' when invoking from command line!" +
                              "\n\tUse '<command>' without hyphen once application started.\n";
-                printDebug(msg,0);
+                printInfo(msg);
             }
         }
     }   
