@@ -271,6 +271,7 @@ public class Manager {
         final Manager m1 = allManagers.get(0);
         try {
             server = new ServerSocket(server_port);
+            server.setSoTimeout(0);
         } catch (Exception e) {
             m1.printDebug("startServer: " + e.getMessage(),0);
         }

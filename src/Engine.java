@@ -194,6 +194,7 @@ abstract class SocketEngine extends Engine {
 
                     SocketAddress sockaddr = new InetSocketAddress(host, port);
                     mySocket = new Socket();
+                    mySocket.setSoTimeout(0);
                     mySocket.connect(sockaddr, 10000);
 
                     printDebug("Connected!");
@@ -552,7 +553,7 @@ class TcpClientEngine extends SocketEngine {
                 if(Manager.version < min_version) {
                     printDebug(
                         "\n****************************************************************\n" +
-                         "Please updgrade client version to atleast version: " + version +
+                         "Please updgrade client to atleast version: " + version +
                         "\n****************************************************************\n"
                         );
                     System.exit(0);
@@ -606,6 +607,7 @@ class TcpClientEngine extends SocketEngine {
             // send games            
             if(!sendGames()) {
                 reconnect = true;
+                net_recieved = false;
                 return false;
             }
         }
