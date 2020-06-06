@@ -271,7 +271,6 @@ public class Manager {
         final Manager m1 = allManagers.get(0);
         try {
             server = new ServerSocket(server_port);
-            server.setSoTimeout(0);
         } catch (Exception e) {
             m1.printDebug("startServer: " + e.getMessage(),0);
         }
@@ -316,8 +315,8 @@ public class Manager {
         }
     }
     static String getWho() {
-        String str = "\n========= " + ObserverEngines.size() +
-             " clients connected  =========\n";
+        String str = "\n============== " + ObserverEngines.size() +
+             " clients connected  ===============\n";
         int i = 1;
         for(Engine e: ObserverEngines) {
             str += i + ". " + e.name + "\n";
@@ -327,10 +326,10 @@ public class Manager {
         return str;
     }
     static String getAllObservers() {
-        String str = "\n========= " + allManagers.size() + " active trainings =========\n";
+        String str = "\n=============== " + allManagers.size() + " active trainings ================\n";
         for(Manager m: allManagers) {
-            str = "\n========= " + m.WorkObservers.size() + 
-               " clients working on training run " + m.workID + " =========\n";
+            str += "======= " + m.WorkObservers.size() + 
+               " clients working on training run " + m.workID + " =======\n";
             int i = 1;
             for(Engine e: m.WorkObservers) {
                 str += i + ". " + e.name + "\n";
@@ -458,7 +457,14 @@ public class Manager {
             } else if(Engine.isSame(cmd,"-help")) {
                 String msg = "-startServer | start server\n" +
                              "-stopServer | stop server\n" +
+                             "-startClient | start client\n" +
                              "-port | set port for the server\n" +
+                             "-debug | turn on debugging\n" +
+                             "-who | list connected clients\n" +
+                             "-workers | list connected clients working on each net\n" +
+                             "-parameters | network training parameters\n" +
+                             "-network-uff | location of the uff net followed by its http address\n" +
+                             "-update-network | update all clients with a new network\n" +
                              "-help | display this usage message." +
                              "\n\tUse '-<command>' when invoking from command line!" +
                              "\n\tUse '<command>' without hyphen once application started.\n";

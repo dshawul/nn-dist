@@ -194,7 +194,6 @@ abstract class SocketEngine extends Engine {
 
                     SocketAddress sockaddr = new InetSocketAddress(host, port);
                     mySocket = new Socket();
-                    mySocket.setSoTimeout(0);
                     mySocket.connect(sockaddr, 10000);
 
                     printDebug("Connected!");
