@@ -50,8 +50,8 @@ public class Engine extends Thread {
         done = State.STARTED;
     }
     public void kill() {}
-    public void send(String str) {}
-    public boolean sendFile(byte[] content) { return false; }
+    public void send(String str) throws IOException {}
+    public void sendFile(byte[] content) throws IOException {}
     boolean isDone() {
         return true;
     }
@@ -143,30 +143,27 @@ abstract class SocketEngine extends Engine {
                 done == State.FAILED);
     }
     @Override
-    public void send(String str) {
-        try {
-            output.println(str);
-        } catch(Exception e) {
-            printDebug("Send: " + e.getMessage());
-        }
+    public void send(String str) throws IOException {
+        output.println(str);
     }
-    public String readLn() {
+    @Override
+    public void sendFile(byte[] content) throws IOException {
+        output_stream.write(content, 0, content.length);
+        output_stream.flush();
+    }
+    public String readLn() throws IOException {
         StringBuffer buffer = new StringBuffer();
-        try {
-            int c = input_stream.read();
-            while(true) {
-                if (c == -1)
-                    break;
-                if (c == '\n')
-                    break;
-                buffer.append((char)c);
-                c = input_stream.read();
-            }
-            if(c != -1)
-                return buffer.toString();
-        } catch (Exception e) {
-            printDebug("ReadLn: " + e.getMessage());
-        };
+        int c = input_stream.read();
+        while(true) {
+            if (c == -1)
+                break;
+            if (c == '\n')
+                break;
+            buffer.append((char)c);
+            c = input_stream.read();
+        }
+        if(c != -1)
+            return buffer.toString();
         return null;
     }
     boolean is_ready() {
@@ -295,23 +292,33 @@ abstract class SocketEngine extends Engine {
             return false;
         if(usernamePattern.matcher(str).matches()) {
             logging++;
-            if(!userName.isEmpty())
-                send(userName);
-            else {
-                Scanner in = new Scanner(System.in);
-                userName = in.nextLine();
-                send(userName);
+            try {
+                if(!userName.isEmpty())
+                    send(userName);
+                else {
+                    Scanner in = new Scanner(System.in);
+                    userName = in.nextLine();
+                    send(userName);
+                }
+            } catch (Exception e) {
+                printDebug("userName: " + e.getMessage());
+                return false;
             }
             return true;
         }
         if(passwordPattern.matcher(str).matches()) {
             logging++;
-            if(!passWord.isEmpty())
-                send(passWord);
-            else {
-                Scanner in = new Scanner(System.in);
-                passWord = in.nextLine();
-                send(passWord);
+            try {
+                if(!passWord.isEmpty())
+                    send(passWord);
+                else {
+                    Scanner in = new Scanner(System.in);
+                    passWord = in.nextLine();
+                    send(passWord);
+                }
+            } catch (Exception e) {
+                printDebug("password: " + e.getMessage());
+                return false;
             }
             return true;
         }
@@ -319,32 +326,21 @@ abstract class SocketEngine extends Engine {
     }
     @Override
     public void kill() {
-        send("quit");
         try {
+            printDebug("Killing connection.");
             output.close();
             mySocket.close();
-            printDebug("Connection lost!");
         } catch (IOException e) {
             printDebug("Kill engine failure: " + e.getMessage());
         }
         super.kill();
     }
-    @Override
-    public boolean sendFile(byte[] content) {
-        try {
-            output_stream.write(content, 0, content.length);
-            output_stream.flush();
-            return true;
-        } catch (Exception e) {
-            System.out.println("Error sending file: " + e.getMessage());
-            return false;
-        }
-    }
     public void recvSaveFile(String fname, boolean append) {
-        String cmd = readLn();
-        int length = Integer.parseInt(cmd.trim());
-        byte[] buffer = new byte[length];
+        String cmd;
         try {
+            cmd = readLn();
+            int length = Integer.parseInt(cmd.trim());
+            byte[] buffer = new byte[length];
             printDebug("Recieving " + fname + " : " + length + " bytes from " + name);
             int rd = 0;
             while (rd < length) {
@@ -358,57 +354,57 @@ abstract class SocketEngine extends Engine {
                 fos.write(buffer, 0, length);
             }
             fos.close();
+            cmd = readLn();
+            printDebug(cmd);
         } catch (Exception e) {
             System.out.println("Error recieving file: " + e.getMessage());
         }
-        cmd = readLn();
-        printDebug(cmd);
     }
     public boolean sendGames() {
         try {
-            File file = new File("cgames.pgn");
 
-            if(file.exists()) {
-                byte[] content;
-                String message;
+            byte[] content;
+            String message;
 
-                //games
-                content = Files.readAllBytes(Paths.get("cgames.pgn"));
+            //games
+            content = Files.readAllBytes(Paths.get("cgames.pgn"));
 
-                int count = new String(content).split("Result").length - 1;
-                printDebug("Sending " + count + " games to server");
+            int count = new String(content).split("Result").length - 1;
+            printDebug("Sending " + count + " games to server");
 
-                message = "<games>\n";
-                message += count + "\n";
-                message += content.length;
-                send(message);
+            message = "<games>\n";
+            message += count + "\n";
+            message += content.length;
+            send(message);
 
-                sendFile(content);
+            sendFile(content);
 
-                message = "</games>";
-                send(message);
+            message = "</games>";
+            send(message);
 
-                //train
-                content = Files.readAllBytes(Paths.get("ctrain.epd"));
+            //train
+            content = Files.readAllBytes(Paths.get("ctrain.epd"));
 
-                message = "<train>\n";
-                message += content.length;
-                send(message);
+            message = "<train>\n";
+            message += content.length;
+            send(message);
 
-                sendFile(content);
+            sendFile(content);
 
-                message = "</train>";
-                send(message);
+            message = "</train>";
+            send(message);
 
-                if(output.checkError()) {
-                    printDebug("Connection lost!");
-                    return false;
-                }
+            if(output.checkError()) {
+                printDebug("Connection lost!");
+                kill();
+                return false;
             }
 
             return true;
+
         } catch (Exception e) {
             printDebug("Could not send games to server!");
+            kill();
             return false;
         }
     }
@@ -504,68 +500,75 @@ class TcpClientEngine extends SocketEngine {
         sc.useDelimiter("[=\\s]");
         String cmd;
         
-        while(sc.hasNext()) {
-            cmd = sc.next();
-            if(isSame(cmd,"<parameters>")) {
-                parameters = "";
-                while(sc.hasNext())
-                    parameters += sc.next() + " ";
-                cmd = readLn();
-                printDebug(cmd);
-            } else if(isSame(cmd,"<checksum>")) {
+        try {
+            while(sc.hasNext()) {
+                cmd = sc.next();
+                if(isSame(cmd,"<parameters>")) {
+                    parameters = "";
+                    while(sc.hasNext())
+                        parameters += sc.next() + " ";
+                    cmd = readLn();
+                    printDebug(cmd);
+                } else if(isSame(cmd,"<checksum>")) {
 
-                cmd = readLn();
-                printDebug(cmd);
-                long checksum = Long.parseLong(cmd.trim());
-                String net_url = readLn();
-                printDebug(net_url);
-                cmd = readLn();
-                printDebug(cmd);
+                    cmd = readLn();
+                    printDebug(cmd);
+                    long checksum = Long.parseLong(cmd.trim());
+                    String net_url = readLn();
+                    printDebug(net_url);
+                    cmd = readLn();
+                    printDebug(cmd);
 
-                long checksum_exist = getChecksum();
-                if(checksum == checksum_exist) {
-                    net_recieved = true;
-                    printDebug("Skipping net download.");
-                } else {
-                    if(downloadNet(net_url,"net.uff")) {
-                        try {
-                            BufferedWriter writer = new BufferedWriter(
-                                new FileWriter("checksum.txt"));
-                            String ck = Long.toString(checksum);
-                            writer.write(ck + "\n");
-                            writer.write(net_url + "\n");
-                            writer.close();
-                            net_recieved = true;
-                            deleteFiles("*.trt",isWindows);
-                        } catch (Exception e) {
-                            printDebug("Checksum: " + e.getMessage());
+                    long checksum_exist = getChecksum();
+                    if(checksum == checksum_exist) {
+                        net_recieved = true;
+                        printDebug("Skipping net download.");
+                    } else {
+                        if(downloadNet(net_url,"net.uff")) {
+                            try {
+                                BufferedWriter writer = new BufferedWriter(
+                                    new FileWriter("checksum.txt"));
+                                String ck = Long.toString(checksum);
+                                writer.write(ck + "\n");
+                                writer.write(net_url + "\n");
+                                writer.close();
+                                net_recieved = true;
+                                deleteFiles("*.trt",isWindows);
+                            } catch (Exception e) {
+                                printDebug("Checksum: " + e.getMessage());
+                            }
                         }
                     }
-                }
-            } else if(isSame(cmd,"<version>")) {
-                cmd = readLn();
-                printDebug(cmd);
-                Integer version = Integer.parseInt(cmd.trim());
-                cmd = readLn();
-                Integer min_version = Integer.parseInt(cmd.trim());
-                printDebug(cmd);
-                cmd = readLn();
-                printDebug(cmd);
+                } else if(isSame(cmd,"<version>")) {
+                    cmd = readLn();
+                    printDebug(cmd);
+                    Integer version = Integer.parseInt(cmd.trim());
+                    cmd = readLn();
+                    Integer min_version = Integer.parseInt(cmd.trim());
+                    printDebug(cmd);
+                    cmd = readLn();
+                    printDebug(cmd);
 
-                if(Manager.version < min_version) {
-                    printDebug(
-                        "\n****************************************************************\n" +
-                         "Please updgrade client to atleast version: " + version +
-                        "\n****************************************************************\n"
-                        );
-                    System.exit(0);
-                } else if(Manager.version < version) {
-                    printDebug(
-                         "\n****************************************************************\n" +
-                         "We recommend you updgrade client to version: " + Manager.version +
-                         "\n****************************************************************\n");
+                    if(Manager.version < min_version) {
+                        printDebug(
+                            "\n****************************************************************\n" +
+                             "Please updgrade client to atleast version: " + version +
+                            "\n****************************************************************\n"
+                            );
+                        System.exit(0);
+                    } else if(Manager.version < version) {
+                        printDebug(
+                             "\n****************************************************************\n" +
+                             "We recommend you updgrade client to version: " + Manager.version +
+                             "\n****************************************************************\n");
+                    }
                 }
             }
+        } catch (Exception e) {
+            printDebug("ServerInputs: " + e.getMessage());
+            kill();
+            sc.close();
+            return false;
         }
         
         sc.close();
@@ -604,19 +607,29 @@ class TcpClientEngine extends SocketEngine {
                         else
                             System.out.print(s + "\r");
                     } else if(hasString(s,"Calibrating")) {
-                        System.out.print(s + "\r");
+                        System.out.println(s);
                     }
                 }
 
                 proc.waitFor();
-                printDebug("Finished executing job!                     ");
+                stdInput.close();
+                printDebug("Finished executing job!\t\t\t");
+
+                File file = new File("cgames.pgn");
+                if(!file.exists()) {
+                    printDebug("No games produced!");
+                    kill();
+                    return false;
+                }
             } catch (Exception e) {
                 printDebug("Could not execute job!");
+                kill();
                 return false;
             }
 
             // send games            
             if(!sendGames()) {
+                kill();
                 reconnect = true;
                 net_recieved = false;
                 return false;
@@ -637,11 +650,10 @@ class TcpServerEngine extends SocketEngine {
         type = Type.TCPS;
     }
     @Override
-    public void kill() {
-    }
-    @Override
     boolean processCommands(String str) {
+
         printDebug(str);
+
         Scanner sc = new Scanner(str);
         sc.useDelimiter("[=\\s]");
         String cmd;
@@ -649,13 +661,16 @@ class TcpServerEngine extends SocketEngine {
         while(sc.hasNext()) {
             cmd = sc.next();
             if(isSame(cmd,"<games>")) {
-                cmd = readLn();
-                printDebug(cmd);
-                int games = Integer.parseInt(cmd.trim());
                 try {
+                    cmd = readLn();
+                    printDebug(cmd);
+                    int games = Integer.parseInt(cmd.trim());
                     myManager.dbm.addContrib(userName,myManager.workID,games);
                 } catch (Exception e) {
                     printDebug("Database update: " + e.getMessage());
+                    kill();
+                    sc.close();
+                    return false;
                 }
                 recvSaveFile("cgames.pgn",true);
             } else if(isSame(cmd,"<train>")) {
