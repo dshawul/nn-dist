@@ -349,6 +349,10 @@ abstract class SocketEngine extends Engine {
                     break;
                 rd += result;
             }
+            if(rd < length) {
+                printDebug("Recieved truncated file!");
+                return;
+            }
             FileOutputStream fos = new FileOutputStream(fname, append);
             synchronized(this) {
                 fos.write(buffer, 0, length);
@@ -357,7 +361,7 @@ abstract class SocketEngine extends Engine {
             cmd = readLn();
             printDebug(cmd);
         } catch (Exception e) {
-            System.out.println("Error recieving file: " + e.getMessage());
+            printDebug("Error recieving file: " + e.getMessage());
         }
     }
     public boolean sendGames() {
@@ -372,10 +376,18 @@ abstract class SocketEngine extends Engine {
             int count = new String(content).split("Result").length - 1;
             printDebug("Sending " + count + " games to server");
 
-            message = "<games>\n";
-            message += count + "\n";
+            message = "<games>";
+            send(message);
+
+            message = count + "\n";
             message += content.length;
             send(message);
+
+            //check for error
+            if(output.checkError()) {
+                printDebug("Connection lost!");
+                return false;
+            }
 
             sendFile(content);
 
@@ -389,22 +401,21 @@ abstract class SocketEngine extends Engine {
             message += content.length;
             send(message);
 
+            //check for error
+            if(output.checkError()) {
+                printDebug("Connection lost!");
+                return false;
+            }
+
             sendFile(content);
 
             message = "</train>";
             send(message);
 
-            if(output.checkError()) {
-                printDebug("Connection lost!");
-                kill();
-                return false;
-            }
-
             return true;
 
         } catch (Exception e) {
             printDebug("Could not send games to server!");
-            kill();
             return false;
         }
     }
@@ -566,7 +577,6 @@ class TcpClientEngine extends SocketEngine {
             }
         } catch (Exception e) {
             printDebug("ServerInputs: " + e.getMessage());
-            kill();
             sc.close();
             return false;
         }
@@ -613,23 +623,20 @@ class TcpClientEngine extends SocketEngine {
 
                 proc.waitFor();
                 stdInput.close();
-                printDebug("Finished executing job!\t\t\t");
+                printDebug("Finished executing job!                      ");
 
                 File file = new File("cgames.pgn");
                 if(!file.exists()) {
                     printDebug("No games produced!");
-                    kill();
                     return false;
                 }
             } catch (Exception e) {
                 printDebug("Could not execute job!");
-                kill();
                 return false;
             }
 
             // send games            
             if(!sendGames()) {
-                kill();
                 reconnect = true;
                 net_recieved = false;
                 return false;
@@ -649,6 +656,7 @@ class TcpServerEngine extends SocketEngine {
         path = "tcps";
         type = Type.TCPS;
     }
+
     @Override
     boolean processCommands(String str) {
 
@@ -668,7 +676,6 @@ class TcpServerEngine extends SocketEngine {
                     myManager.dbm.addContrib(userName,myManager.workID,games);
                 } catch (Exception e) {
                     printDebug("Database update: " + e.getMessage());
-                    kill();
                     sc.close();
                     return false;
                 }

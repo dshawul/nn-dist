@@ -158,8 +158,8 @@ class DatabaseManager {
 public class Manager {
     public static DatabaseManager dbm;
     public static final String server_address = "scorpiozero.ddns.net";
-    public static final int version = 2;
-    public static final int min_version = 2;
+    public static final int version = 3;
+    public static final int min_version = 3;
     public static ServerSocket server;
     public static int server_port;
     public static boolean isServer;
@@ -407,6 +407,7 @@ public class Manager {
                 m.WorkObservers.remove(e);
             }
             ObserverEngines.remove(e);
+            e.kill();
         }
     }
     public void LoadEngine(Engine e2) {
