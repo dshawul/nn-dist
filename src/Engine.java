@@ -272,7 +272,7 @@ abstract class SocketEngine extends Engine {
                     }
                 }
                 reconnect = true;
-                printDebug("Reconnecting ...");
+                printDebug("Reconnecting ...                  ");
             }
 
         } while(reconnect);
@@ -514,7 +514,8 @@ class TcpClientEngine extends SocketEngine {
         try {
             while(sc.hasNext()) {
                 cmd = sc.next();
-                if(isSame(cmd,"<parameters>")) {
+                if(isSame(cmd,"pong")) {
+                } else if(isSame(cmd,"<parameters>")) {
                     parameters = "";
                     while(sc.hasNext())
                         parameters += sc.next() + " ";
@@ -590,6 +591,7 @@ class TcpClientEngine extends SocketEngine {
             return true;
         
         while(!is_ready()) {
+
             //resend left-over games
             if(reconnect) {
                 sendGames();
@@ -625,22 +627,38 @@ class TcpClientEngine extends SocketEngine {
                 stdInput.close();
                 printDebug("Finished executing job!                      ");
 
+                //check if job succeeded
                 File file = new File("cgames.pgn");
                 if(!file.exists()) {
                     printDebug("No games produced!");
                     return false;
                 }
+
+                //check if connection is still alive
+                send("ping");
+                int waitc = 0;
+                while(!is_ready()) {
+                    waitc++;
+                    if(waitc >= 7) {
+                        reconnect = true;
+                        net_recieved = false;
+                        return false;
+                    }
+                    try {
+                        System.out.print("Reconnecting in : " +
+                            Integer.toString(8 - waitc) + " sec\r");
+                        Thread.sleep(1000);
+                    } catch (Exception e) {};
+                }
+
             } catch (Exception e) {
                 printDebug("Could not execute job!");
                 return false;
             }
 
-            // send games            
-            if(!sendGames()) {
-                reconnect = true;
-                net_recieved = false;
-                return false;
-            }
+            //send games
+            sendGames();
+
         }
         
         return true;
@@ -668,7 +686,11 @@ class TcpServerEngine extends SocketEngine {
         
         while(sc.hasNext()) {
             cmd = sc.next();
-            if(isSame(cmd,"<games>")) {
+            if(isSame(cmd,"ping")) {
+                try {
+                    send("pong");
+                } catch (Exception e) {};
+            } else if(isSame(cmd,"<games>")) {
                 try {
                     cmd = readLn();
                     printDebug(cmd);
