@@ -514,8 +514,7 @@ class TcpClientEngine extends SocketEngine {
         try {
             while(sc.hasNext()) {
                 cmd = sc.next();
-                if(isSame(cmd,"pong")) {
-                } else if(isSame(cmd,"<parameters>")) {
+                if(isSame(cmd,"<parameters>")) {
                     parameters = "";
                     while(sc.hasNext())
                         parameters += sc.next() + " ";
@@ -546,6 +545,7 @@ class TcpClientEngine extends SocketEngine {
                                 writer.close();
                                 net_recieved = true;
                                 deleteFiles("*.trt",isWindows);
+                                send("pong");
                             } catch (Exception e) {
                                 printDebug("Checksum: " + e.getMessage());
                             }
@@ -612,12 +612,22 @@ class TcpClientEngine extends SocketEngine {
                     InputStreamReader(proc.getInputStream()));
 
                 String s = null;
+                int games = 0;
                 while ((s = stdInput.readLine()) != null) {
                     if(s.startsWith("[")) {
                         if(hasString(s,"generated"))
                             System.out.println("\n" + s);
-                        else
+                        else {
                             System.out.print(s + "\r");
+
+                            //keep socket alive every 20 games
+                            if((games % 20) == 0) {
+                                try {
+                                    send("pong");
+                                } catch (Exception e) {};
+                            }
+                            games++;
+                        }
                     } else if(hasString(s,"Calibrating")) {
                         System.out.println(s);
                     }
@@ -677,6 +687,8 @@ class TcpServerEngine extends SocketEngine {
 
     @Override
     boolean processCommands(String str) {
+        if(hasString(str,"pong"))
+            return true;
 
         printDebug(str);
 
