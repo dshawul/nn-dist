@@ -271,6 +271,7 @@ abstract class SocketEngine extends Engine {
                         printDebug("Sleep: " + e.getMessage());
                     }
                 }
+                kill();
                 reconnect = true;
                 printDebug("Reconnecting ...                  ");
             }
@@ -641,6 +642,10 @@ class TcpClientEngine extends SocketEngine {
                 File file = new File("cgames.pgn");
                 if(!file.exists()) {
                     printDebug("No games produced!");
+
+                    //redownload net
+                    deleteFiles("checksum.txt", isWindows);
+                    net_recieved = false;
                     return false;
                 }
 
@@ -663,6 +668,10 @@ class TcpClientEngine extends SocketEngine {
 
             } catch (Exception e) {
                 printDebug("Could not execute job!");
+
+                //redownload net
+                deleteFiles("checksum.txt", isWindows);
+                net_recieved = false;
                 return false;
             }
 
