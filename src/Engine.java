@@ -98,7 +98,7 @@ abstract class SocketEngine extends Engine {
     private static final Pattern passwordPattern = Pattern.compile(
             ".*password:.*",
             Pattern.DOTALL);
-    
+
     SocketEngine(String cmd) {
         super();
         Scanner sc = new Scanner(cmd);
@@ -287,12 +287,8 @@ abstract class SocketEngine extends Engine {
         Manager.HandleDisconnects(this);
     }
 
-    private int logging = 0;
     public boolean handleLogin(String str) {
-        if(logging >= 6)
-            return false;
         if(usernamePattern.matcher(str).matches()) {
-            logging++;
             try {
                 if(!userName.isEmpty())
                     send(userName);
@@ -308,7 +304,6 @@ abstract class SocketEngine extends Engine {
             return true;
         }
         if(passwordPattern.matcher(str).matches()) {
-            logging++;
             try {
                 if(!passWord.isEmpty())
                     send(passWord);
