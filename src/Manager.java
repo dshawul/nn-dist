@@ -287,12 +287,6 @@ public class Manager {
                         eng.myManager = m1;
                         ObserverEngines.add(eng);
                         ObserverEngines.get(ObserverEngines.size() - 1).start();
-                        while(!eng.isDone())
-                            ;
-                        if(!eng.hasFailed()) {
-                            m1.addLastObserver();
-                            Observe(eng,m1.workID);
-                        }
                     }
                 } catch (Exception e) {
                     m1.printDebug("startServer: " + e.getMessage(),0);

@@ -253,6 +253,11 @@ abstract class SocketEngine extends Engine {
                 start_t = System.currentTimeMillis();
                 done = State.CONNECTED;
 
+                if(!isClient) {
+                    myManager.addLastObserver();
+                    myManager.Observe(this,myManager.workID);
+                }
+
                 while((str = readLn()) != null) {
                     if(!processCommands(str))
                         break;
