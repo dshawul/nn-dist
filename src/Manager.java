@@ -319,6 +319,21 @@ public class Manager {
         str += "===================================================\n";
         return str;
     }
+    static void killObserver(int engine_id) {
+        int i = 1;
+        for(Engine e: ObserverEngines) {
+            if(i == engine_id) {
+                try {
+                    e.myManager.printDebug("Sending kill signal to engine " + engine_id, 0);
+                    e.send("kill");
+                } catch (Exception ex) {
+                    System.out.println("Error sending kill signal!");
+                }
+                break;
+            }
+            i++;
+        }
+    }
     static String getAllObservers() {
         String str = "\n=============== " + allManagers.size() + " active trainings ================\n";
         for(Manager m: allManagers) {
@@ -425,6 +440,9 @@ public class Manager {
                 LoadEngine(InstalledEngines.get(0));
             } else if(Engine.isSame(cmd,"-port")) {
                 server_port = Integer.parseInt(args[count++]);
+            } else if(Engine.isSame(cmd,"-kill")) {
+                int id = Integer.parseInt(args[count++]);
+                Manager.killObserver(id);
             } else if(Engine.isSame(cmd,"-debug")) {
                 isVerbose = !isVerbose;
                 if(isVerbose) printDebug("debugging on",0);
@@ -454,6 +472,7 @@ public class Manager {
                              "-stopServer | stop server\n" +
                              "-startClient | start client\n" +
                              "-port | set port for the server\n" +
+                             "-kill | kill client with id\n" +
                              "-debug | turn on debugging\n" +
                              "-who | list connected clients\n" +
                              "-workers | list connected clients working on each net\n" +
