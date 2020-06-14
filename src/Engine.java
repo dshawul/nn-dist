@@ -543,22 +543,39 @@ class TcpClientEngine extends SocketEngine {
                         net_recieved = true;
                         printDebug("Skipping net download.");
                     } else {
-                        if(downloadNet(net_url,"net.uff")) {
-                            try {
-                                BufferedWriter writer = new BufferedWriter(
-                                    new FileWriter("checksum.txt"));
-                                String ck = Long.toString(checksum);
-                                writer.write(ck + "\n");
-                                writer.write(net_url + "\n");
-                                writer.close();
-                                net_recieved = true;
-                                if(isWindows)
-                                    deleteFiles("*.trt cgames.pgn ctrain.epd Scorpio/bin/Windows/games.pgn* Scorpio/bin/Windows/train.epd*",isWindows);
-                                else
-                                    deleteFiles("*.trt cgames.pgn ctrain.epd Scorpio/bin/Linux/games.pgn* Scorpio/bin/Linux/train.epd*",isWindows);
-                                send("pong");
-                            } catch (Exception e) {
-                                printDebug("Checksum: " + e.getMessage());
+                        String netFile = "net.uff";
+                        if(downloadNet(net_url,netFile)) {
+                            long net_checksum = Manager.computeChecksum(netFile);
+                            if(checksum == net_checksum) {
+                                try {
+                                    BufferedWriter writer = new BufferedWriter(
+                                        new FileWriter("checksum.txt"));
+                                    String ck = Long.toString(checksum);
+                                    writer.write(ck + "\n");
+                                    writer.write(net_url + "\n");
+                                    writer.close();
+                                    net_recieved = true;
+                                    if(isWindows)
+                                        deleteFiles("*.trt " +
+                                                    "cgames.pgn " +
+                                                    "ctrain.epd " +
+                                                    "Scorpio/bin/Windows/games.pgn* " +
+                                                    "Scorpio/bin/Windows/train.epd*",
+                                                    isWindows);
+                                    else
+                                        deleteFiles("*.trt " +
+                                                    "cgames.pgn " +
+                                                    "ctrain.epd " +
+                                                    "Scorpio/bin/Linux/games.pgn* " +
+                                                    "Scorpio/bin/Linux/train.epd*",
+                                                    isWindows);
+                                    send("pong");
+                                } catch (Exception e) {
+                                    printDebug("Checksum: " + e.getMessage());
+                                }
+                            } else {
+                                printDebug("Checksum mismatch: " + checksum + " vs " + net_checksum);
+                                return false;
                             }
                         }
                     }

@@ -165,6 +165,7 @@ public class Manager {
     public static boolean isServer;
     public static String network_uff;
     public static String network_uff_url;
+    public static long net_checksum = 0;
     public static String[] parameters;
     
     public static List<Manager> allManagers;
@@ -174,7 +175,6 @@ public class Manager {
     public static int workID;
 
     private boolean isVerbose = false;
-    public static long net_checksum = 0;
     
     static {
         allManagers = new LinkedList<Manager>();
@@ -250,15 +250,16 @@ public class Manager {
     }
     public void onStart() {
     }
-    public static void computeChecksum() {
+    public static long computeChecksum(String uff) {
         try {
-            File net_uff = new File(network_uff);
-            byte[] content = Files.readAllBytes(Paths.get(network_uff));
+            File net_uff = new File(uff);
+            byte[] content = Files.readAllBytes(Paths.get(uff));
             Checksum checksum = new Adler32();
             checksum.update(content, 0, content.length);
-            net_checksum = checksum.getValue();
+            return checksum.getValue();
         } catch (Exception e) {
             System.out.println("computeCheckusm: " + e.getMessage());
+            return 0;
         }
     }
     public static void startServer() {
@@ -390,7 +391,7 @@ public class Manager {
         }
     }
     static void SendNetworkAll(int ID) {
-        computeChecksum();
+        net_checksum = computeChecksum(network_uff);
         for(Manager m: allManagers) {
             if(m.workID == ID) {
                 for(Engine e: m.WorkObservers) {
