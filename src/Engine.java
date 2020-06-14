@@ -343,7 +343,7 @@ abstract class SocketEngine extends Engine {
         }
         super.kill();
     }
-    public void recvSaveFile(String fname, boolean append) {
+    public boolean recvSaveFile(String fname, boolean append) {
         String cmd;
         try {
             cmd = readLn();
@@ -353,13 +353,14 @@ abstract class SocketEngine extends Engine {
             int rd = 0;
             while (rd < length) {
                 int result = input_stream.read(buffer, rd, length - rd);
-                if (result == -1) 
+                //check for failure or if 'null' character is present
+                if (result == -1 || result == 0)
                     break;
                 rd += result;
             }
             if(rd < length) {
-                printDebug("Recieved truncated file!");
-                return;
+                printDebug("Recieved truncated/corrupted file!");
+                return false;
             }
             FileOutputStream fos = new FileOutputStream(fname, append);
             synchronized(this) {
@@ -368,8 +369,10 @@ abstract class SocketEngine extends Engine {
             fos.close();
             cmd = readLn();
             printDebug(cmd);
+            return true;
         } catch (Exception e) {
             printDebug("Error recieving file: " + e.getMessage());
+            return false;
         }
     }
     public boolean sendGames() {
@@ -731,7 +734,7 @@ class TcpServerEngine extends SocketEngine {
         Scanner sc = new Scanner(str);
         sc.useDelimiter("[=\\s]");
         String cmd;
-        
+
         while(sc.hasNext()) {
             cmd = sc.next();
             if(isSame(cmd,"ping")) {
@@ -743,21 +746,38 @@ class TcpServerEngine extends SocketEngine {
                     cmd = readLn();
                     printDebug(cmd);
                     int games = Integer.parseInt(cmd.trim());
-                    if(games == 0) {
-                        send("kill");
-                        sc.close();
-                        return false;
-                    } else {
+                    if(games > 0) {
                         myManager.dbm.addContrib(userName,myManager.workID,games);
+                    } else {
+                        try {
+                            send("kill");
+                            sc.close();
+                            return false;
+                        } catch (Exception e) {};
                     }
                 } catch (Exception e) {
                     printDebug("Database update: " + e.getMessage());
-                    sc.close();
-                    return false;
+                    try {
+                        send("kill");
+                        sc.close();
+                        return false;
+                    } catch (Exception i) {};
                 }
-                recvSaveFile("cgames.pgn",true);
+                if(!recvSaveFile("cgames.pgn",true)) {
+                    try {
+                        send("kill");
+                        sc.close();
+                        return false;
+                    } catch (Exception e) {};
+                }
             } else if(isSame(cmd,"<train>")) {
-                recvSaveFile("ctrain.epd",true);
+                if(!recvSaveFile("ctrain.epd",true)) {
+                    try {
+                        send("kill");
+                        sc.close();
+                        return false;
+                    } catch (Exception e) {};
+                }
             }
         }
         
