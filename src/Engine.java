@@ -259,6 +259,13 @@ abstract class SocketEngine extends Engine {
                 }
 
                 while((str = readLn()) != null) {
+                    if(isClient) {
+                        if(Engine.hasString(str, "kill")) {
+                            printDebug("Server killed malfunctioning client!");
+                            printDebug("Try removing checksum.txt, killing all processes and restarting!");
+                            return;
+                        }
+                    }
                     if(!processCommands(str))
                         break;
                 }
@@ -545,7 +552,10 @@ class TcpClientEngine extends SocketEngine {
                                 writer.write(net_url + "\n");
                                 writer.close();
                                 net_recieved = true;
-                                deleteFiles("*.trt",isWindows);
+                                if(isWindows)
+                                    deleteFiles("*.trt cgames.pgn ctrain.epd Scorpio/bin/Windows/games.pgn* Scorpio/bin/Windows/train.epd*",isWindows);
+                                else
+                                    deleteFiles("*.trt cgames.pgn ctrain.epd Scorpio/bin/Linux/games.pgn* Scorpio/bin/Linux/train.epd*",isWindows);
                                 send("pong");
                             } catch (Exception e) {
                                 printDebug("Checksum: " + e.getMessage());
@@ -716,7 +726,13 @@ class TcpServerEngine extends SocketEngine {
                     cmd = readLn();
                     printDebug(cmd);
                     int games = Integer.parseInt(cmd.trim());
-                    myManager.dbm.addContrib(userName,myManager.workID,games);
+                    if(games == 0) {
+                        send("kill");
+                        sc.close();
+                        return false;
+                    } else {
+                        myManager.dbm.addContrib(userName,myManager.workID,games);
+                    }
                 } catch (Exception e) {
                     printDebug("Database update: " + e.getMessage());
                     sc.close();
