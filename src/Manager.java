@@ -323,14 +323,15 @@ public class Manager {
     static void killObserver(int engine_id) {
         int i = 1;
         for(Engine e: ObserverEngines) {
-            if(i == engine_id) {
+            if(engine_id == 0 || i == engine_id) {
                 try {
                     e.myManager.printDebug("Sending kill signal to engine " + engine_id, 0);
                     e.send("kill");
                 } catch (Exception ex) {
                     System.out.println("Error sending kill signal!");
                 }
-                break;
+                if(engine_id != 0)
+                    break;
             }
             i++;
         }
@@ -444,6 +445,8 @@ public class Manager {
             } else if(Engine.isSame(cmd,"-kill")) {
                 int id = Integer.parseInt(args[count++]);
                 Manager.killObserver(id);
+            } else if(Engine.isSame(cmd,"-killall")) {
+                Manager.killObserver(0);
             } else if(Engine.isSame(cmd,"-debug")) {
                 isVerbose = !isVerbose;
                 if(isVerbose) printDebug("debugging on",0);
@@ -474,6 +477,7 @@ public class Manager {
                              "-startClient | start client\n" +
                              "-port | set port for the server\n" +
                              "-kill | kill client with id\n" +
+                             "-killall | kill all clients\n" +
                              "-debug | turn on debugging\n" +
                              "-who | list connected clients\n" +
                              "-workers | list connected clients working on each net\n" +
