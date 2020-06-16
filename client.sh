@@ -8,7 +8,7 @@ if [ -z `which nvidia-smi` ]; then
 fi
 
 if [ ! -L Scorpio ]; then
-  scripts/install.sh --no-egbb --no-lcnets --precision INT8
+  scripts/install.sh --no-egbb --no-lcnets --precision INT8 $@
 fi
 
 exec java -cp bin ConsoleInterface -debug -startClient
