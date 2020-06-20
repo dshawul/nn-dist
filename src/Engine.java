@@ -750,13 +750,14 @@ class TcpServerEngine extends SocketEngine {
                         myManager.dbm.addContrib(userName,myManager.workID,games);
                     } else {
                         try {
+                            printDebug("0 games recieved!");
                             send("kill");
                             sc.close();
                             return false;
                         } catch (Exception e) {};
                     }
                 } catch (Exception e) {
-                    printDebug("Database update: " + e.getMessage());
+                    printDebug("Failure to update database: " + e.getMessage());
                     try {
                         send("kill");
                         sc.close();
@@ -765,6 +766,7 @@ class TcpServerEngine extends SocketEngine {
                 }
                 if(!recvSaveFile("cgames.pgn",true)) {
                     try {
+                        printDebug("Failure to update cgames.pgn!");
                         send("kill");
                         sc.close();
                         return false;
@@ -773,6 +775,7 @@ class TcpServerEngine extends SocketEngine {
             } else if(isSame(cmd,"<train>")) {
                 if(!recvSaveFile("ctrain.epd",true)) {
                     try {
+                        printDebug("Failure to update ctrain.epd!");
                         send("kill");
                         sc.close();
                         return false;
