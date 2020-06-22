@@ -12,6 +12,10 @@ POL_TEMP=$3                    # Policy temeprature
 NOISE_FRAC=$4                  # Fraction of Dirchilet noise
 HEAD_TYPE=$5                   # NN heads
 RAND_TEMP=$6                   # Temperature for random selection
+NOISE_ALPHA=$7                 # Alpha parameter
+NOISE_BETA=$8                  # Beta parameter
+FORCED_PLAYOUTS=$9             # Use forced playouts
+POLICY_PRUNING=${10}           # Use policy pruning
 
 #launch multiple jobs with mpi
 RANKS=1
@@ -37,7 +41,9 @@ fi
 rungames() {
     SCOPT="train_data_type ${HEAD_TYPE} alphabeta_man_c 0 min_policy_value 0 \
            reuse_tree 0 fpu_is_loss 0 fpu_red 0 cpuct_init ${CPUCT} \
-           backup_type 6 rand_temp ${RAND_TEMP} policy_temp ${POL_TEMP} noise_frac ${NOISE_FRAC}"
+           backup_type 6 rand_temp ${RAND_TEMP} policy_temp ${POL_TEMP} noise_frac ${NOISE_FRAC} \
+           noise_alpha ${NOISE_ALPHA} noise_beta ${NOISE_BETA} forced_playouts ${FORCED_PLAYOUTS} \
+           policy_pruning ${POLICY_PRUNING}"
     ALLOPT="nn_type 0 nn_path ${NDIR} new ${SCOPT} sv ${SV} \
 	   pvstyle 1 selfplayp ${G} games.pgn train.epd quit"
     time ${MPICMD} ./${EXE} ${ALLOPT}
