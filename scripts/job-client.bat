@@ -16,6 +16,10 @@ SET NOISE_BETA=%8
 SET FORCED_PLAYOUTS=%9
 SHIFT
 SET POLICY_PRUNING=%9
+SHIFT
+SET FPU_IS_LOSS=%9
+SHIFT
+SET FPU_RED=%9
 
 REM launch multiple jobs with mpi
 SET RANKS=1
@@ -43,7 +47,7 @@ SET CPUS=%NUMBER_OF_PROCESSORS%
 
 REM selfplay options
 SET SCOPT=train_data_type %HEAD_TYPE% alphabeta_man_c 0 min_policy_value 0 ^
-          nn_type 0 reuse_tree 0 fpu_is_loss 0 fpu_red 0 cpuct_init %CPUCT% ^
+          reuse_tree 0 fpu_is_loss %FPU_IS_LOSS% fpu_red %FPU_RED% cpuct_init %CPUCT% ^
           backup_type 6 rand_temp %RAND_TEMP% policy_temp %POL_TEMP% noise_frac %NOISE_FRAC% ^
           noise_alpha %NOISE_ALPHA% noise_beta %NOISE_BETA% forced_playouts %FORCED_PLAYOUTS% ^
           policy_pruning %POLICY_PRUNING%
