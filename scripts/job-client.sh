@@ -41,9 +41,9 @@ fi
 
 #run selfplay
 rungames() {
-    SCOPT="train_data_type ${HEAD_TYPE} alphabeta_man_c 0 min_policy_value 0 \
-           reuse_tree 0 fpu_is_loss ${FPU_IS_LOSS} fpu_red ${FPU_RED} cpuct_init ${CPUCT} \
-           backup_type 6 rand_temp ${RAND_TEMP} policy_temp ${POL_TEMP} noise_frac ${NOISE_FRAC} \
+    SCOPT="reuse_tree 0 backup_type 6 alphabeta_man_c 0 min_policy_value 0 \
+           train_data_type ${HEAD_TYPE} fpu_is_loss ${FPU_IS_LOSS} fpu_red ${FPU_RED} cpuct_init ${CPUCT} \
+           rand_temp ${RAND_TEMP} policy_temp ${POL_TEMP} noise_frac ${NOISE_FRAC} \
            noise_alpha ${NOISE_ALPHA} noise_beta ${NOISE_BETA} forced_playouts ${FORCED_PLAYOUTS} \
            policy_pruning ${POLICY_PRUNING}"
     ALLOPT="nn_type 0 nn_path ${NDIR} new ${SCOPT} sv ${SV} \
