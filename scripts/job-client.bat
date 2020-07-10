@@ -20,6 +20,8 @@ SHIFT
 SET FPU_IS_LOSS=%9
 SHIFT
 SET FPU_RED=%9
+SHIFT
+SET PLAYOUT_CAP=%9
 
 REM launch multiple jobs with mpi
 SET RANKS=1
@@ -46,7 +48,7 @@ IF %ERRORLEVEL% NEQ 0 (
 SET CPUS=%NUMBER_OF_PROCESSORS%
 
 REM selfplay options
-SET SCOPT=reuse_tree 0 backup_type 6 alphabeta_man_c 0 min_policy_value 0 ^
+SET SCOPT=reuse_tree 0 backup_type 6 alphabeta_man_c 0 min_policy_value 0 playout_cap_rand %PLAYOUT_CAP% ^
           train_data_type %HEAD_TYPE% fpu_is_loss %FPU_IS_LOSS% fpu_red %FPU_RED% cpuct_init %CPUCT% ^
           rand_temp %RAND_TEMP% policy_temp %POL_TEMP% noise_frac %NOISE_FRAC% ^
           noise_alpha %NOISE_ALPHA% noise_beta %NOISE_BETA% forced_playouts %FORCED_PLAYOUTS% ^
