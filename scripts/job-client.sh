@@ -6,19 +6,7 @@ set -e
 SC=./Scorpio/bin/Linux         # workding directory of engine
 EXE=scorpio.sh                 # engine executable
 G=512                          # games per worker
-SV=$1                          # mcts simulations
-CPUCT=$2                       # Cpuct constant
-POL_TEMP=$3                    # Policy temeprature
-NOISE_FRAC=$4                  # Fraction of Dirchilet noise
-HEAD_TYPE=$5                   # NN heads
-RAND_TEMP=$6                   # Temperature for random selection
-NOISE_ALPHA=$7                 # Alpha parameter
-NOISE_BETA=$8                  # Beta parameter
-FORCED_PLAYOUTS=$9             # Use forced playouts
-POLICY_PRUNING=${10}           # Use policy pruning
-FPU_IS_LOSS=${11}              # FPU is loss, win, or reduction
-FPU_RED=${12}                  # FPU is reduction
-PLAYOUT_CAP=${13}              # Playout cap randomization
+SCOPT="$@"                     # all options
 
 #launch multiple jobs with mpi
 RANKS=1
@@ -42,12 +30,7 @@ fi
 
 #run selfplay
 rungames() {
-    SCOPT="reuse_tree 0 backup_type 6 alphabeta_man_c 0 min_policy_value 0 playout_cap_rand ${PLAYOUT_CAP} \
-           train_data_type ${HEAD_TYPE} fpu_is_loss ${FPU_IS_LOSS} fpu_red ${FPU_RED} cpuct_init ${CPUCT} \
-           rand_temp ${RAND_TEMP} policy_temp ${POL_TEMP} noise_frac ${NOISE_FRAC} \
-           noise_alpha ${NOISE_ALPHA} noise_beta ${NOISE_BETA} forced_playouts ${FORCED_PLAYOUTS} \
-           policy_pruning ${POLICY_PRUNING}"
-    ALLOPT="nn_type 0 nn_path ${NDIR} new ${SCOPT} sv ${SV} \
+    ALLOPT="nn_type 0 nn_path ${NDIR} new ${SCOPT} \
 	   pvstyle 1 selfplayp ${G} games.pgn train.epd quit"
     time ${MPICMD} ./${EXE} ${ALLOPT}
 }

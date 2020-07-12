@@ -526,9 +526,8 @@ class TcpClientEngine extends SocketEngine {
             while(sc.hasNext()) {
                 cmd = sc.next();
                 if(isSame(cmd,"<parameters>")) {
-                    parameters = "";
-                    while(sc.hasNext())
-                        parameters += sc.next() + " ";
+                    parameters = readLn();
+                    printDebug(parameters);
                     cmd = readLn();
                     printDebug(cmd);
                 } else if(isSame(cmd,"<checksum>")) {

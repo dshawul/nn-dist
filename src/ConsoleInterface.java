@@ -31,7 +31,7 @@ class ConsoleManager extends Manager {
                             ProcessCommands(command);
                         }
                     } catch (Exception e) {
-                        printDebug(e.getMessage(),0);
+                        printDebug("Server error message: " + e.getMessage(),0);
                     }
                 }
             };

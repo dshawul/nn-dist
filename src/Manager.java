@@ -158,8 +158,8 @@ class DatabaseManager {
 public class Manager {
     public static DatabaseManager dbm;
     public static final String server_address = "scorpiozero.ddns.net";
-    public static final int version = 8;
-    public static final int min_version = 8;
+    public static final int version = 9;
+    public static final int min_version = 9;
     public static ServerSocket server;
     public static int server_port;
     public static boolean isServer;
@@ -358,7 +358,7 @@ public class Manager {
     static void SendParameters(Engine e) {
         String message = "";
         try {
-            message = "<parameters> ";
+            message = "<parameters>\n";
             for(int i = 0; i < parameters.length; i++)
                 message += parameters[i] + " ";
             message += "\n</parameters>";
