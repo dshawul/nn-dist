@@ -10,13 +10,39 @@ display_help() {
     echo "  -p,--precision     Precision to use FLOAT/HALF/INT8."
     echo "  -t,--threads       Total number of threads, i.e minibatch size."
     echo "  -f,--factor        Factor for auto minibatch size determination from SMs, default 2."
+    echo "  --cpu              Force installation on the CPU even if machine has GPU."
     echo "  --no-egbb          Do not install 5-men egbb."
     echo "  --no-lcnets        Do not install lczero nets."
     echo "  --no-scnets        Do not download scorpio nets."
+    echo "  --only-trt         Install only TensorRT and rely on system cuda and cudnn."
+    echo "                     72 needs cuda-11 and cudnn-8"
+    echo "                     60 needs cuda-10 and cudnn-7"
     echo
     echo "Example: ./install.sh -p INT8 -t 80"
     echo
 }
+
+# Scorpio version number
+VERSION=3.0
+VR=`echo $VERSION | tr -d '.'`
+
+# Autodetect operating system
+OS=windows
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+  OS=ubuntu
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+  OS=macosx
+fi
+
+# number of cores and gpus
+CPUS=`grep -c ^processor /proc/cpuinfo`
+if [ ! -z `which nvidia-smi` ]; then
+    GPUS=1
+    DEV=gpu
+else
+    GPUS=0
+    DEV=cpu
+fi
 
 # process cmd line arguments
 PREC=
@@ -24,7 +50,13 @@ THREADS=
 IEGBB=1
 ILCNET=1
 ISCNET=1
-FACTOR=2
+if [ $DEV = "gpu" ]; then
+  FACTOR=2
+else
+  FACTOR=1
+fi
+TRT=
+
 while ! [ -z "$1" ]; do
     case $1 in
         -p | --precision )
@@ -39,6 +71,11 @@ while ! [ -z "$1" ]; do
             shift
             FACTOR=$1
             ;;
+        --cpu )
+            GPUS=0
+            DEV=cpu
+            FACTOR=1
+            ;;
         --no-egbb )
             IEGBB=0
             ;;
@@ -48,39 +85,16 @@ while ! [ -z "$1" ]; do
         --no-scnets )
             ISCNET=0
             ;;
+        --only-trt )
+            shift
+            TRT="-trt-$1"
+            ;;
         -h | --help)
             display_help
             exit 0
     esac
     shift
 done
-
-# number of cores and gpus
-CPUS=`grep -c ^processor /proc/cpuinfo`
-if [ ! -z `which nvidia-smi` ]; then
-    GPUS=1
-    DEV=gpu
-else
-    GPUS=0
-    DEV=cpu
-fi
-
-# Autodetect operating system
-OSD=windows
-if [[ "$OSTYPE" == "linux-gnu" ]]; then
-  OSD=ubuntu
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-  OSD=macosx
-fi
-
-# Select
-OS=${1:-$OSD}      # OS is either ubuntu/centos/windows/android
-DEV=${2:-$DEV}     # Device is either gpu/cpu
-VERSION=3.0        # Version of scorpio
-
-# paths
-VR=`echo $VERSION | tr -d '.'`
-EGBB=nnprobe-${OS}-${DEV}
 
 # download
 SCORPIO=Scorpio-$(date '+%d-%b-%Y')
@@ -91,13 +105,14 @@ cd $SCORPIO
 
 # egbbdll & linnnprobe
 LNK=https://github.com/dshawul/Scorpio/releases/download
+EGBB=nnprobe-${OS}-${DEV}${TRT}
 wget --no-check-certificate ${LNK}/${VERSION}/${EGBB}.zip
 unzip -o ${EGBB}.zip
 
 # networks
 NET=
 if [ $ISCNET -eq 1 ]; then
-    NET="nets-scorpio"
+    NET="nets-scorpio nets-nnue"
 fi
 if [ $DEV = "gpu" ] && [ $ILCNET -eq 1 ]; then
     NET="${NET} nets-lczero nets-maddex"
@@ -188,7 +203,7 @@ if [ $DEV = "gpu" ]; then
     cd $exep
 else
     [ -z $PREC ] && PREC=FLOAT
-    [ -z $THREADS ] && THREADS=$((CPUS*FACTOR*2))
+    [ -z $THREADS ] && THREADS=$((CPUS*FACTOR))
 fi
 
 # number of threads

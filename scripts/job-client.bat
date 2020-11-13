@@ -4,7 +4,7 @@ SETLOCAL ENABLEDELAYEDEXPANSION
 REM setup parameters for selfplay
 SET SC=%cd%\Scorpio\bin\Windows
 SET EXE=scorpio.bat
-SET G=512
+SET G=1024
 SET SCOPT=%*
 
 REM launch multiple jobs with mpi
@@ -20,24 +20,12 @@ IF NOT EXIST %SC%\%EXE% (
     exit 0
 )
 
-REM check for nvidia GPU
-WHERE nvcuda.dll >nul 2>nul
-IF %ERRORLEVEL% NEQ 0 (
-  SET GPUS=0
-  SET NDIR=%cd%\net.pb
-) ELSE (
-  SET GPUS=1
-  SET NDIR=%cd%\net.uff
-)
-SET CPUS=%NUMBER_OF_PROCESSORS%
-
 CALL :get_selfplay_games
 EXIT /B %ERRORLEVEL%
 
 REM run multiple instances
 :rungames
-    CALL %MPICMD% %SC%\%EXE% nn_type 0 nn_path %NDIR% new %SCOPT% ^
-         pvstyle 1 selfplayp %~1 games.pgn train.epd quit
+    CALL %MPICMD% %SC%\%EXE% pvstyle 1 selfplayp %~1 games.pgn train.epd quit
     echo "All jobs finished"
 EXIT /B %ERRORLEVEL%
 

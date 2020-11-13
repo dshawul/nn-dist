@@ -5,7 +5,7 @@ set -e
 #setup parameters for selfplay
 SC=./Scorpio/bin/Linux         # workding directory of engine
 EXE=scorpio.sh                 # engine executable
-G=512                          # games per worker
+G=1024                         # games per worker
 SCOPT="$@"                     # all options
 
 #launch multiple jobs with mpi
@@ -21,17 +21,9 @@ if [ ! -f ${SC}/${EXE} ]; then
     exit 0
 fi
 
-#number of cpus and gpus
-if [ ! -z `which nvidia-smi` ]; then
-    NDIR=$PWD/net.uff
-else
-    NDIR=$PWD/net.pb
-fi
-
 #run selfplay
 rungames() {
-    ALLOPT="nn_type 0 nn_path ${NDIR} new ${SCOPT} \
-	   pvstyle 1 selfplayp ${G} games.pgn train.epd quit"
+    ALLOPT="${SCOPT} pvstyle 1 selfplayp ${G} games.pgn train.epd quit"
     time ${MPICMD} ./${EXE} ${ALLOPT}
 }
 

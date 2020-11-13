@@ -12,6 +12,10 @@ On Linux execute:
 
      ./client.sh
 
+If you want to install client specifically for CPU e.g. for NNUE training
+
+     ./client.sh --cpu
+
 
 ## How to build
 Just in case you want to build it, you would need Java JDK for the javac compiler.

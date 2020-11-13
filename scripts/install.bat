@@ -1,7 +1,19 @@
 @ECHO off
+
+REM -------- Scorpio version number
 SET VERSION=3.0
 SET VR=30
 SET OSD=windows
+
+REM --------- Nvidia GPU
+WHERE nvcuda.dll >nul 2>nul
+IF %ERRORLEVEL% NEQ 0 (
+  SET GPUS=0
+  SET DEV=cpu
+) ELSE (
+  SET GPUS=1
+  SET DEV=gpu
+)
 
 REM --------- process command line arguments
 SET PREC=
@@ -10,6 +22,11 @@ SET IEGBB=1
 SET ILCNET=1
 SET ISCNET=1
 SET FACTOR=2
+IF %GPUS% EQU 0 (
+   SET FACTOR=1
+)
+SET TRT=
+
 :loop
 IF NOT "%1"=="" (
     IF "%1"=="-p" (
@@ -30,12 +47,19 @@ IF NOT "%1"=="" (
     ) ELSE IF "%1"=="--factor" (
         SET FACTOR=%2
         SHIFT
+    ) ELSE IF "%1"=="--cpu" (
+        SET GPUS=0
+        SET DEV=cpu
+        SET FACTOR=1
     ) ELSE IF "%1"=="--no-egbb" (
         SET IEGBB=0
     ) ELSE IF "%1"=="--no-lcnets" (
         SET ILCNET=0
     ) ELSE IF "%1"=="--no-scnets" (
         SET ISCNET=0
+    ) ELSE IF "%1"=="--only-trt" (
+        SET TRT="-trt-%2"
+        SHIFT
     ) ELSE IF "%1"=="--help" (
         :usage
         echo Usage: %0
@@ -44,9 +68,13 @@ IF NOT "%1"=="" (
         echo   -p,--precision     Precision to use FLOAT/HALF/INT8.
         echo   -t,--threads       Total number of threads, i.e minibatch size.
         echo   -f,--factor        Factor for auto minibatch size determination from SMs, default 2.
+        echo   --cpu              Force installation on the CPU even if machine has GPU.
         echo   --no-egbb          Do not install 5-men egbb.
         echo   --no-lcnets        Do not install lczero nets.
         echo   --no-scnets        Do not install scorpio nets.
+        echo   --only-trt         Install only TensorRT and rely on system cuda and cudnn.
+        echo                      72 needs cuda-11 and cudnn-8
+        echo                      60 needs cuda-10 and cudnn-7
         echo
         echo Example: install.bat -p INT8 - t 80
         exit /b
@@ -55,18 +83,8 @@ IF NOT "%1"=="" (
     GOTO :loop
 )
 
-REM --------- Nvidia GPU
-WHERE nvcuda.dll >nul 2>nul
-IF %ERRORLEVEL% NEQ 0 (
-  SET GPUS=0
-  SET DEV=cpu
-) ELSE (
-  SET GPUS=1
-  SET DEV=gpu
-)
-
-SET EGBB=nnprobe-%OSD%-%DEV%
 SET LNK=http://github.com/dshawul/Scorpio/releases/download
+SET EGBB=nnprobe-%OSD%-%DEV%%TRT%
 
 REM --------- create directory
 SET SCORPIO=Scorpio
@@ -98,7 +116,7 @@ DEL %CWD%%FILENAME%
 REM --------- download networks
 SET NETS=
 IF %ISCNET% NEQ 0 (
-   SET NETS=nets-scorpio.zip
+   SET NETS=nets-scorpio.zip nets-nnue.zip
 )
 IF %GPUS% NEQ 0 (
     IF %ILCNET% NEQ 0 (
@@ -181,7 +199,7 @@ IF %GPUS% NEQ 0 (
     cd ..
 ) ELSE (
     IF "%PREC%"=="" ( SET PREC=FLOAT )
-    IF "%THREADS%"=="" ( SET /a THREADS=%NUMBER_OF_PROCESSORS%*%FACTOR%*2 )
+    IF "%THREADS%"=="" ( SET /a THREADS=%NUMBER_OF_PROCESSORS%*%FACTOR% )
 )
 
 REM ---------- number of threads
