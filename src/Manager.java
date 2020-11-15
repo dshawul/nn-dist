@@ -253,10 +253,14 @@ public class Manager {
     public static long computeChecksum(String uff) {
         try {
             File net_uff = new File(uff);
-            byte[] content = Files.readAllBytes(Paths.get(uff));
-            Checksum checksum = new Adler32();
-            checksum.update(content, 0, content.length);
-            return checksum.getValue();
+            if(net_uff.exists()) {
+                byte[] content = Files.readAllBytes(Paths.get(uff));
+                Checksum checksum = new Adler32();
+                checksum.update(content, 0, content.length);
+                return checksum.getValue();
+            } else {
+                return 0;
+            }
         } catch (Exception e) {
             System.out.println("computeCheckusm: " + e.getMessage());
             return 0;

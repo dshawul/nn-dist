@@ -540,12 +540,14 @@ class TcpClientEngine extends SocketEngine {
                     cmd = readLn();
                     printDebug(cmd);
 
+                    String netFile = "net.uff";
                     long checksum_exist = getChecksum();
-                    if(checksum == checksum_exist) {
+                    if(checksum == checksum_exist && 
+                        Manager.computeChecksum(netFile) == checksum_exist
+                        ) {
                         net_recieved = true;
                         printDebug("Skipping net download.");
                     } else {
-                        String netFile = "net.uff";
                         if(downloadNet(net_url,netFile)) {
                             long net_checksum = Manager.computeChecksum(netFile);
                             if(checksum == net_checksum) {
